@@ -17,9 +17,22 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Tránh insert trùng email khi chạy migrate:fresh / db:seed nhiều lần
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            ['name' => 'Test User', 'password' => \Illuminate\Support\Facades\Hash::make('password')]
+        );
+
+
+
+        $this->call([
+            // UserSeeder cũng tạo admin/vendor/customer nên không gọi nếu đã tự tạo ở trên
+            // UserSeeder::class,
+            BrandSeeder::class,
+            CategorySeeder::class,
+            AttributeSeeder::class,
+            ProductSeeder::class,
         ]);
+
     }
 }
