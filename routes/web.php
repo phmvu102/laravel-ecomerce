@@ -10,16 +10,11 @@ use Illuminate\Support\Facades\Route;
 | COMMON CONTROLLERS
 |--------------------------------------------------------------------------
 */
-
-use App\Http\Controllers\ProfileController;
-
 /*
 |--------------------------------------------------------------------------
 | CLIENT CONTROLLERS
 |--------------------------------------------------------------------------
 */
-
-use App\Http\Controllers\Client\CartController;
 use App\Http\Controllers\Client\ProductController as ClientProductController;
 
 /*
