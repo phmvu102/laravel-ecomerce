@@ -2,19 +2,35 @@
 
 use Illuminate\Support\Facades\Route;
 
-//===================== User =======================
-use App\Http\Controllers\ProfileController;
-//===================== User =======================
+// ===================== CLIENT =====================
+use App\Http\Controllers\Client\CartController;
+use App\Http\Controllers\Client\ProductController as ClientProductController;
 
-//===================== Admin =======================
+// ===================== ADMIN =====================
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\AttributeController;
-use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\BrandController;
-//===================== Admin =======================
 
-// Nhóm các Route dành riêng cho ADMIN
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+// ===================== COMMON =====================
+use App\Http\Controllers\ProfileController;
+
+//Client Routes
+Route::get('/', [ClientProductController::class, 'index'])->name('home');
+
+Route::prefix('shop')->name('client.')->group(function () {
+
+    Route::get('/{category_slug?}', [ClientProductController::class, 'shop'])
+        ->name('shop');
+
+    Route::get('/product/{slug}', [ClientProductController::class, 'show'])
+        ->name('product.show');
+});
+
+//Authenticated User Routes
+Route::middleware(['auth'])->group(function () {
+
+    //Dashboard
     Route::get('/dashboard', function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
@@ -80,4 +96,28 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Client routes
+Route::get('/', [ProductController::class, 'index'])->name('home');
+Route::get('/shop/{category_slug?}', [ProductController::class, 'shop'])->name('client.shop');
+Route::get('/product/{slug}', [ProductController::class, 'show'])->name('client.product.show');
+
+// Auth required
+Route::middleware('auth')->group(function () {
+    // Breeze profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Cart
+    Route::get('/cart', [CartController::class, 'index'])->name('client.cart.index');
+    Route::post('/cart/add', [CartController::class, 'add'])->name('client.cart.add');
+    Route::patch('/cart/update', [CartController::class, 'update'])->name('client.cart.update');
+    Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('client.cart.remove');
+    Route::delete('/cart/clear', [CartController::class, 'clear'])->name('client.cart.clear');
+
+    // Checkout
+    Route::get('/checkout', [CartController::class, 'checkout'])->name('client.checkout');
+    Route::post('/checkout', [CartController::class, 'placeOrder'])->name('client.checkout.place');
+    Route::get('/order-success/{order}', [CartController::class, 'orderSuccess'])->name('client.order.success');
+});
 require __DIR__.'/auth.php';
