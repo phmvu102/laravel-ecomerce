@@ -12,6 +12,6 @@ class Brand extends Model
     // Một thương hiệu có nhiều sản phẩm
     public function products(): HasMany
     {
-        return $this->hasMany(Product::class);
+        return $this->hasMany(Product::class, 'brand_id', 'id');
     }
 }

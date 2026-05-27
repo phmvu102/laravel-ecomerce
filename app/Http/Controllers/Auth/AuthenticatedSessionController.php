@@ -28,7 +28,22 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Lấy thông tin user vừa đăng nhập
+        $user = Auth::user();
+
+        // Kiểm tra nếu tài khoản bị khóa (banned) thì đăng xuất ngay
+        if ($user->status === 'banned') {
+            Auth::logout();
+            return redirect()->route('login')->withErrors(['email' => 'Tài khoản của bạn đã bị khóa.']);
+        }
+
+        // Điều hướng dựa trên Vai trò (Role)
+        return match ($user->role) {
+            'admin'  => redirect()->intended('/admin/dashboard'),
+            'vendor' => redirect()->intended('/vendor/dashboard'),
+            'staff'  => redirect()->intended('/staff/dashboard'),
+            default  => redirect()->intended('/'), // Khách hàng về trang chủ
+        };
     }
 
     /**
