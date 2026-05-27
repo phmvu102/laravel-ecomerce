@@ -29,4 +29,21 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    protected $fillable = [
+        'name', 'email', 'password',
+        'phone', 'role', 'status', 'avatar' // Thêm các cột mới vào đây
+    ];
+
+    // Một user có nhiều đơn hàng
+    public function orders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    // Một user có nhiều yêu cầu đổi trả
+    public function returnRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ReturnRequest::class);
+    }
 }
