@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Client\ProductController;
+use App\Http\Controllers\Client\CartController;
 use Illuminate\Support\Facades\Route;
 
 /*
