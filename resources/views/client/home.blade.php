@@ -1,4 +1,4 @@
-@extends('client.layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Trang chủ - ShopNova | Thiên Đường Mua Sắm Chuyên Nghiệp')
 
@@ -6,7 +6,7 @@
 <style>
     /* Hệ thống nền Liquid & Glassmorphism cao cấp - Đã tinh giản để tôn sản phẩm */
     .premium-bg {
-        background: 
+        background:
             radial-gradient(circle at 10% 10%, rgba(249, 115, 22, 0.04), transparent 30%),
             radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.04), transparent 40%),
             #f8fafc;
@@ -50,11 +50,11 @@
         background: rgba(255, 255, 255, 0.92) !important;
         color: #0c4a6e !important; /* Xanh Deep Ocean cực kỳ sang trọng và dễ nhìn */
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
-        
+
         /* Hiệu ứng hào quang phát sáng dịu mắt (Soft Glow) thay vì viền thô */
-        box-shadow: 
-            0 8px 20px rgba(14, 165, 233, 0.25), 
-            0 0 15px rgba(56, 189, 248, 0.4), 
+        box-shadow:
+            0 8px 20px rgba(14, 165, 233, 0.25),
+            0 0 15px rgba(56, 189, 248, 0.4),
             inset 0 2px 4px rgba(255, 255, 255, 0.8) !important;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
@@ -129,7 +129,7 @@
 @section('content')
 @php
     $saleProducts = ($flashSaleProducts ?? collect())->count() ? $flashSaleProducts : ($newProducts ?? collect());
-    
+
     $categoryColors = [
         'bg-blue-50 text-blue-600 ring-blue-100/50',
         'bg-orange-50 text-orange-600 ring-orange-100/50',
@@ -175,7 +175,7 @@
 
             <div class="absolute inset-0 flex items-center">
                 <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="max-w-2xl lg:pl-16"> 
+                    <div class="max-w-2xl lg:pl-16">
                         <div class="badge-chip inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white">
                             <span class="h-2 w-2 rounded-full {{ $slide['badge_color'] }} animate-pulse"></span>
                             {{ $slide['badge'] }}
@@ -299,7 +299,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
                     </div>
-                    
+
                     <div>
                         <span class="text-[11px] font-bold uppercase tracking-widest text-amber-300 bg-white/20 px-3 py-1 rounded-full border border-white/40 shadow-sm">Đang diễn ra</span>
                         <h2 class="text-3xl font-black tracking-tight sm:text-4xl mt-2 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)]">
@@ -307,7 +307,7 @@
                         </h2>
                     </div>
                 </div>
-                
+
                 <div class="flex items-center gap-2" id="countdown">
                     <span class="text-base font-extrabold text-white mr-2 drop-shadow">KẾT THÚC SAU:</span>
                     @foreach(['hours' => 'Giờ', 'minutes' => 'Phút', 'seconds' => 'Giây'] as $id => $label)
@@ -321,8 +321,8 @@
 
             <div class="mt-12 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
                 @forelse($saleProducts->take(5) as $product)
-                    @include('client.components.product-card', [
-                        'product' => $product, 
+                    @include('layouts.product-card', [
+                        'product' => $product,
                         'badge' => $product->sale_price && $product->price && $product->sale_price < $product->price ? 'sale' : 'new'
                     ])
                 @empty
@@ -354,7 +354,7 @@
 
         <div class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
             @forelse(($newProducts ?? collect())->take(8) as $product)
-                @include('client.components.product-card', ['product' => $product, 'badge' => 'new'])
+                @include('layouts.product-card', ['product' => $product, 'badge' => 'new'])
             @empty
                 @for($i = 0; $i < 8; $i++)
                     <div class="rounded-2xl border border-slate-100 bg-white p-4 space-y-4 animate-pulse">
@@ -399,7 +399,7 @@
 <script>
 // SLIDER BANNER LOGIC
 let currentSlide = 0;
-const totalSlides = {{ count($slides) }}; 
+const totalSlides = {{ count($slides) }};
 let slideInterval = setInterval(nextSlide, 6000);
 
 function updateSliderViews() {
@@ -449,7 +449,7 @@ function resetInterval() {
 function updateCountdown() {
     const now = new Date();
     const midnight = new Date();
-    midnight.setHours(24, 0, 0, 0); 
+    midnight.setHours(24, 0, 0, 0);
     const diff = Math.max(midnight - now, 0);
 
     const hours = Math.floor(diff / 3 warm00000);

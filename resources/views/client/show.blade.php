@@ -1,4 +1,4 @@
-@extends('client.layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Chi Tiết Sản Phẩm - ShopNova')
 
