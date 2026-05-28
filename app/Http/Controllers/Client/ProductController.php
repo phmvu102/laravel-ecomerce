@@ -3,16 +3,13 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\Brand;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    /**
-     * Trang chủ
-     */
     public function index()
     {
         $categories = Category::withCount('products')
@@ -21,98 +18,52 @@ class ProductController extends Controller
             ->get();
 
         $newProducts = Product::with(['brand', 'variants'])
-            ->where('status', 'active')
+            ->active()
             ->latest()
             ->take(8)
             ->get();
 
-        $featuredProducts = Product::with(['brand'])
-            ->where('status', 'active')
+        $featuredProducts = Product::with(['brand', 'variants'])
+            ->active()
             ->where('is_featured', true)
             ->take(4)
             ->get();
 
-        return view('client.home', compact(
-            'categories',
-            'newProducts',
-            'featuredProducts'
-        ));
+        return view('client.home', compact('categories', 'newProducts', 'featuredProducts'));
     }
 
-    /**
-     * Trang danh sách sản phẩm / lọc theo danh mục
-     */
     public function shop(Request $request, $category_slug = null)
     {
-        $query = Product::with(['brand', 'category', 'variants'])
-            ->where('status', 'active');
-
-        // Lọc theo danh mục
         $currentCategory = null;
-        if ($category_slug) {
-            $currentCategory = Category::where('slug', $category_slug)->firstOrFail();
-            // Lấy cả sản phẩm của danh mục con
-            $categoryIds = Category::where('parent_id', $currentCategory->id)
-                ->pluck('id')
-                ->push($currentCategory->id);
-            $query->whereIn('category_id', $categoryIds);
-        }
 
-        // Tìm kiếm
-        if ($request->filled('search')) {
-            $keyword = $request->search;
-            $query->where(function ($q) use ($keyword) {
-                $q->where('name', 'like', "%{$keyword}%")
-                  ->orWhere('description', 'like', "%{$keyword}%");
+        $products = Product::with(['brand', 'category', 'variants'])
+            ->active()
+            ->when($category_slug, function ($q) use ($category_slug, &$currentCategory) {
+                $currentCategory = Category::where('slug', $category_slug)->firstOrFail();
+                $q->byCategory($currentCategory->id);
+            })
+            ->when($request->filled('search'),    fn($q) => $q->search($request->search))
+            ->when($request->filled('brands'),    fn($q) => $q->byBrands($request->brands))
+            ->when($request->filled('min_price'), fn($q) => $q->minPrice($request->min_price))
+            ->when($request->filled('max_price'), fn($q) => $q->maxPrice($request->max_price))
+            ->sorted($request->get('sort', 'newest'))
+            ->paginate(12)
+            ->withQueryString();
+
+        $categories = Category::with(['children' => fn($q) => $q->withCount('products')])
+            ->whereNull('parent_id')
+            ->get()
+            ->each(function ($cat) {
+                // Tổng = sản phẩm cha + tổng sản phẩm các con
+                $cat->products_count = $cat->children->sum('products_count') 
+                    + $cat->products()->count();
             });
-        }
 
-        // Lọc theo thương hiệu
-        if ($request->filled('brand')) {
-            $query->where('brand_id', $request->brand);
-        }
+        $brands = Brand::whereHas('products', fn($q) => $q->active())->get();
 
-        // Lọc theo giá
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        // Sắp xếp
-        switch ($request->get('sort', 'latest')) {
-            case 'price_asc':
-                $query->orderBy('price', 'asc');
-                break;
-            case 'price_desc':
-                $query->orderBy('price', 'desc');
-                break;
-            case 'name_asc':
-                $query->orderBy('name', 'asc');
-                break;
-            case 'popular':
-                $query->withCount('orderItems')->orderBy('order_items_count', 'desc');
-                break;
-            default:
-                $query->latest();
-        }
-
-        $products  = $query->paginate(12)->withQueryString();
-        $categories = Category::withCount('products')->whereNull('parent_id')->get();
-        $brands     = Brand::whereHas('products', fn($q) => $q->where('status', 'active'))->get();
-
-        return view('client.shop', compact(
-            'products',
-            'categories',
-            'brands',
-            'currentCategory'
-        ));
+        return view('client.shop', compact('products', 'categories', 'brands', 'currentCategory'));
     }
 
-    /**
-     * Trang chi tiết sản phẩm
-     */
     public function show($slug)
     {
         $product = Product::with([
@@ -120,13 +71,12 @@ class ProductController extends Controller
             'category',
             'variants.attributeValues.attribute',
         ])
+        ->active()
         ->where('slug', $slug)
-        ->where('status', 'active')
         ->firstOrFail();
 
-        // Sản phẩm liên quan (cùng danh mục, trừ sản phẩm hiện tại)
         $relatedProducts = Product::with(['brand', 'variants'])
-            ->where('status', 'active')
+            ->active()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->take(8)
