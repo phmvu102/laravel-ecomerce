@@ -407,27 +407,30 @@
                 @endforeach
 
                 {{-- Qty + Add to cart --}}
-                <div class="flex flex-col gap-3">
+                <form action="{{ route('client.cart.add') }}" method="POST" class="flex flex-col gap-3">
+                    @csrf
+                    <input type="hidden" name="product_variant_id" id="selectedVariantId" value="{{ $primaryVariant?->id }}">
+                    <input type="hidden" name="quantity" id="selectedQuantity" value="1">
                     <div class="flex items-center gap-3">
                         <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Số lượng:</p>
                         <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1">
-                            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                            <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
                             <span id="qtyDisplay" class="w-10 text-center text-sm font-bold text-slate-800">1</span>
-                            <button class="qty-btn" onclick="changeQty(1)">+</button>
+                            <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3 mt-1">
-                        <button class="btn-primary">
+                        <button type="submit" class="btn-primary">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                             Thêm vào giỏ
                         </button>
-                        <button class="btn-secondary">
+                        <button type="submit" class="btn-secondary" formaction="{{ route('client.cart.add') }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             Mua ngay
                         </button>
                     </div>
-                </div>
+                </form>
 
                 {{-- Trust badges --}}
                 <div class="grid grid-cols-2 gap-2.5">
