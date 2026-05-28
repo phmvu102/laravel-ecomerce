@@ -1,21 +1,9 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Client\ProductController;
+use App\Http\Controllers\Client\ProductController as ClientProductController;
 use App\Http\Controllers\Client\CartController;
 use Illuminate\Support\Facades\Route;
-
-/*
-|--------------------------------------------------------------------------
-| COMMON CONTROLLERS
-|--------------------------------------------------------------------------
-*/
-/*
-|--------------------------------------------------------------------------
-| CLIENT CONTROLLERS
-|--------------------------------------------------------------------------
-*/
-use App\Http\Controllers\Client\ProductController as ClientProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,12 +44,6 @@ Route::prefix('shop')
 
 Route::middleware('auth')->group(function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Profile
-    |--------------------------------------------------------------------------
-    */
-
     Route::prefix('profile')
         ->name('profile.')
         ->group(function () {
@@ -75,12 +57,6 @@ Route::middleware('auth')->group(function () {
             Route::delete('/', [ProfileController::class, 'destroy'])
                 ->name('destroy');
         });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cart
-    |--------------------------------------------------------------------------
-    */
 
     Route::prefix('cart')
         ->name('client.cart.')
@@ -102,12 +78,6 @@ Route::middleware('auth')->group(function () {
                 ->name('clear');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Checkout
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/checkout', [CartController::class, 'checkout'])
         ->name('client.checkout');
 
@@ -128,31 +98,12 @@ Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Dashboard
-        |--------------------------------------------------------------------------
-        */
-
         Route::get('/dashboard', function () {
             return view('admin.dashboard');
         })->name('dashboard');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Categories
-        |--------------------------------------------------------------------------
-        */
-
         Route::resource('categories', CategoryController::class)
             ->except(['show', 'create']);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Attributes
-        |--------------------------------------------------------------------------
-        */
 
         Route::resource('attributes', AttributeController::class)
             ->except(['show', 'create']);
@@ -167,20 +118,8 @@ Route::middleware(['auth', 'role:admin'])
             [AttributeController::class, 'destroyValue']
         )->name('attributes.destroyValue');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Products
-        |--------------------------------------------------------------------------
-        */
-
         Route::resource('products', AdminProductController::class)
             ->except(['show']);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Brands
-        |--------------------------------------------------------------------------
-        */
 
         Route::resource('brands', BrandController::class)
             ->except(['show', 'create', 'edit']);
@@ -197,7 +136,11 @@ Route::middleware(['auth', 'role:vendor,admin'])
     });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return match (auth()->user()->role) {
+        'admin' => redirect()->route('admin.dashboard'),
+        'vendor' => redirect()->route('vendor.dashboard'),
+        default => view('dashboard'),
+    };
 })
     ->middleware(['auth', 'verified'])
     ->name('dashboard');

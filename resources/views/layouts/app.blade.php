@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'ShopNova - Mua sắm thông minh')</title>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'ShopNova - Mua sắm thông minh')</title>
 
+    {{-- Fonts --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     {{-- Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -145,14 +154,16 @@
                             </svg>
                         </button>
                         <div x-show="open" x-transition class="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-50">
-                            <a href="{{ route('client.profile.index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                            <a href="{{ route('profile.edit') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                 Tài khoản
                             </a>
-                            <a href="{{ route('client.profile.orders') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                            @if(Route::has('profile.orders'))
+                            <a href="{{ route('profile.orders') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900">
                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                 Đơn hàng
                             </a>
+                            @endif
                             <hr class="my-2 border-slate-100">
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -227,8 +238,7 @@
     </main>
 
     <footer class="bg-slate-950 text-slate-400 mt-20 border-t border-slate-900 relative overflow-hidden">
-            {{-- Điểm nhấn hiệu ứng ánh sáng ngầm (Liquid Light Base) ở góc phải footer --}}
-            <div class="absolute bottom-0 right-0 w-80 h-80 bg-sky-500/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-0 right-0 w-80 h-80 bg-sky-500/5 rounded-full blur-[120px] pointer-events-none"></div>
             <div class="absolute top-0 left-1/4 w-60 h-60 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none"></div>
 
             {{-- Main Footer --}}

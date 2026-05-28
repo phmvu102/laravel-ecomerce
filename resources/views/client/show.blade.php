@@ -454,7 +454,7 @@
             {{-- Tab: Description --}}
             <div id="tab-desc" class="tab-content p-6 sm:p-8">
                 <div class="prose prose-slate max-w-none text-sm sm:text-base leading-relaxed text-slate-600">
-                    <p class="text-base font-semibold text-slate-800 mb-4">{{ $product->description ?? $demoProduct['description'] }}</p>
+                    <div class="text-base font-semibold text-slate-800 mb-4">{!! $product->description ?? $demoProduct['description'] !!}</div>
                     <p>iPhone 15 Pro Max là đỉnh cao công nghệ của Apple năm 2024. Với thiết kế khung titan Grade 5 lần đầu xuất hiện trên iPhone, máy vừa nhẹ hơn thế hệ trước lại bền bỉ vượt trội. Chip A17 Pro được sản xuất trên tiến trình 3nm thế hệ 2 mang đến hiệu năng CPU tăng 10% và GPU tăng 20% so với A16 Bionic.</p>
                     <ul class="mt-4 space-y-2 list-none pl-0">
                         @foreach([

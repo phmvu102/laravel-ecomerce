@@ -39,10 +39,10 @@ class AuthenticatedSessionController extends Controller
 
         // Điều hướng dựa trên Vai trò (Role)
         return match ($user->role) {
-            'admin'  => redirect()->intended('/admin/dashboard'),
-            'vendor' => redirect()->intended('/vendor/dashboard'),
-            'staff'  => redirect()->intended('/staff/dashboard'),
-            default  => redirect()->intended('/'), // Khách hàng về trang chủ
+            'admin'  => redirect()->route('admin.dashboard'),
+            'vendor' => redirect()->route('vendor.dashboard'),
+            'staff'  => redirect()->route('dashboard'),
+            default  => redirect()->route('home'), // Khách hàng về trang chủ
         };
     }
 

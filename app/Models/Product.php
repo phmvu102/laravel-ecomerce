@@ -15,6 +15,8 @@ class Product extends Model
         'category_id',
         'short_description',
         'description',
+        'thumbnail',
+        'images',
         'specifications',
         'status',
         'is_featured',
@@ -22,6 +24,7 @@ class Product extends Model
     ];
 
     protected $casts = [
+        'images' => 'array',
         'specifications' => 'array',
         'is_featured' => 'boolean',
     ];
@@ -41,4 +44,3 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 }
-
