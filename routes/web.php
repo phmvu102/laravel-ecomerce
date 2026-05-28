@@ -136,13 +136,33 @@ Route::middleware(['auth', 'role:vendor,admin'])
     });
 
 Route::get('/dashboard', function () {
-    return match (auth()->user()->role) {
-        'admin' => redirect()->route('admin.dashboard'),
-        'vendor' => redirect()->route('vendor.dashboard'),
-        default => view('dashboard'),
-    };
-})
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+    return view('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
-require __DIR__ . '/auth.php';
+// Client routes
+Route::get('/', [ClientProductController::class, 'index'])->name('home');
+Route::get('/shop/{category_slug?}', [ClientProductController::class, 'shop'])->name('client.shop');
+Route::get('/product/{slug}', [ClientProductController::class, 'show'])->name('client.product.show');
+
+// Auth required
+Route::middleware('auth')->group(function () {
+    // Breeze profile
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile/orders', [ProfileController::class, 'orders'])->name('client.profile.orders');
+    Route::get('/profile/orders/{order}', [ProfileController::class, 'orderDetail'])->name('client.profile.orders.show');
+
+    // Cart
+    Route::get('/cart', [CartController::class, 'index'])->name('client.cart.index');
+    Route::post('/cart/add', [CartController::class, 'add'])->name('client.cart.add');
+    Route::patch('/cart/update', [CartController::class, 'update'])->name('client.cart.update');
+    Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('client.cart.remove');
+    Route::delete('/cart/clear', [CartController::class, 'clear'])->name('client.cart.clear');
+
+    // Checkout
+    Route::get('/checkout', [CartController::class, 'checkout'])->name('client.checkout');
+    Route::post('/checkout', [CartController::class, 'placeOrder'])->name('client.checkout.place');
+    Route::get('/order-success/{order}', [CartController::class, 'orderSuccess'])->name('client.order.success');
+});
+require __DIR__.'/auth.php';
