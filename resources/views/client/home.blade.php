@@ -1,4 +1,4 @@
-@extends('client.layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Trang chủ - ShopNova | Thiên Đường Mua Sắm Chuyên Nghiệp')
 
@@ -321,7 +321,7 @@
 
             <div class="mt-12 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
                 @forelse($saleProducts->take(5) as $product)
-                    @include('client.components.product-card', [
+                    @include('components.product-card', [
                         'product' => $product, 
                         'badge' => $product->sale_price && $product->price && $product->sale_price < $product->price ? 'sale' : 'new'
                     ])
@@ -354,7 +354,7 @@
 
         <div class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
             @forelse(($newProducts ?? collect())->take(8) as $product)
-                @include('client.components.product-card', ['product' => $product, 'badge' => 'new'])
+                @include('components.product-card', ['product' => $product, 'badge' => 'new'])
             @empty
                 @for($i = 0; $i < 8; $i++)
                     <div class="rounded-2xl border border-slate-100 bg-white p-4 space-y-4 animate-pulse">

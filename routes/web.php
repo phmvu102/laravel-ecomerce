@@ -1,13 +1,9 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Client\ProductController;
+use App\Http\Controllers\Client\ProductController as ClientProductController;
 use App\Http\Controllers\Client\CartController;
 use Illuminate\Support\Facades\Route;
-
-//===================== User =======================
-use App\Http\Controllers\ProfileController;
-//===================== User =======================
 
 //===================== Admin =======================
 use App\Http\Controllers\Admin\CategoryController;
@@ -84,9 +80,9 @@ Route::middleware('auth')->group(function () {
 });
 
 // Client routes
-Route::get('/', [ProductController::class, 'index'])->name('home');
-Route::get('/shop/{category_slug?}', [ProductController::class, 'shop'])->name('client.shop');
-Route::get('/product/{slug}', [ProductController::class, 'show'])->name('client.product.show');
+Route::get('/', [ClientProductController::class, 'index'])->name('home');
+Route::get('/shop/{category_slug?}', [ClientProductController::class, 'shop'])->name('client.shop');
+Route::get('/product/{slug}', [ClientProductController::class, 'show'])->name('client.product.show');
 
 // Auth required
 Route::middleware('auth')->group(function () {
