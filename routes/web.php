@@ -141,6 +141,7 @@ Route::get('/dashboard', function () {
 
 // Client routes
 Route::get('/', [ClientProductController::class, 'index'])->name('home');
+Route::view('/gioi-thieu', 'client.about')->name('client.about');
 Route::get('/shop/{category_slug?}', [ClientProductController::class, 'shop'])->name('client.shop');
 Route::get('/product/{slug}', [ClientProductController::class, 'show'])->name('client.product.show');
 

@@ -229,19 +229,32 @@
 
 @section('content')
 @php
-    // Demo data — thay bằng $product thật từ controller
-    $demoProduct = [
-        'name' => 'iPhone 15 Pro Max Titanium Edition',
-        'brand' => 'Apple',
-        'sku' => 'APL-IP15PM-256',
-        'price' => 34990000,
-        'sale_price' => 28490000,
-        'rating' => 4.8,
-        'review_count' => 142,
-        'sold' => 1287,
-        'stock' => 12,
-        'description' => 'iPhone 15 Pro Max được trang bị chip A17 Pro mạnh mẽ nhất từ trước đến nay, thiết kế titan siêu nhẹ bền bỉ, hệ thống camera Pro nâng tầm nhiếp ảnh di động với khả năng quay video ProRes 4K cùng cổng USB-C tốc độ cao.',
-    ];
+    $variants = $product->variants ?? collect();
+    $primaryVariant = $variants->sortBy(fn ($variant) => $variant->sale_price ?? $variant->price)->first();
+    $primaryValueIds = $primaryVariant
+        ? $primaryVariant->attributeValues->pluck('id')->all()
+        : [];
+    $variantImages = $variants->pluck('image')->filter()->unique()->values();
+    $fallbackImage = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80';
+    $mainImage = $variantImages->first();
+    $currentPrice = $primaryVariant ? ($primaryVariant->sale_price ?? $primaryVariant->price) : $product->min_price;
+    $originalPrice = $primaryVariant ? $primaryVariant->price : $product->original_price;
+    $isOnSale = $product->is_on_sale && $originalPrice > $currentPrice;
+    $savingAmount = max(0, $originalPrice - $currentPrice);
+    $attributeGroups = $variants
+        ->flatMap(fn ($variant) => $variant->attributeValues)
+        ->unique('id')
+        ->groupBy(fn ($value) => $value->attribute->name ?? $value->attribute->code ?? 'Thuộc tính');
+    $specifications = $product->specifications ?? [];
+    $variantPayload = $variants->map(fn ($variant) => [
+        'id' => $variant->id,
+        'sku' => $variant->sku,
+        'price' => (float) $variant->price,
+        'sale_price' => $variant->sale_price ? (float) $variant->sale_price : null,
+        'final_price' => (float) ($variant->sale_price ?? $variant->price),
+        'image_url' => $variant->image ? asset('storage/'.$variant->image) : null,
+        'attribute_value_ids' => $variant->attributeValues->pluck('id')->values(),
+    ])->values();
 @endphp
 
 <div class="detail-bg pb-20">
@@ -253,7 +266,11 @@
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             <a href="{{ route('client.shop') }}" class="hover:text-sky-500 transition-colors">Sản phẩm</a>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            <span class="text-slate-600 font-semibold line-clamp-1">{{ $product->name ?? $demoProduct['name'] }}</span>
+            @if($product->category)
+                <a href="{{ route('client.shop', $product->category->slug) }}" class="hover:text-sky-500 transition-colors">{{ $product->category->name }}</a>
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            @endif
+            <span class="text-slate-600 font-semibold line-clamp-1">{{ $product->name }}</span>
         </nav>
 
         {{-- ===== PRODUCT MAIN SECTION ===== --}}
@@ -263,22 +280,14 @@
             <div class="flex gap-4">
                 {{-- Thumbnail list --}}
                 <div class="thumb-list hidden sm:flex">
-                    @php $images = $product->images ?? []; @endphp
-                    @forelse($images as $i => $img)
+                    @forelse($variantImages as $i => $img)
                         <div class="thumb-item {{ $i === 0 ? 'active' : '' }}" onclick="switchImage(this, '{{ asset('storage/'.$img) }}')">
-                            <img src="{{ asset('storage/'.$img) }}" alt="thumb">
+                            <img src="{{ asset('storage/'.$img) }}" alt="{{ $product->name }}">
                         </div>
                     @empty
-                        @foreach([
-                            'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=400&auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&auto=format&fit=crop&q=80',
-                        ] as $i => $url)
-                        <div class="thumb-item {{ $i === 0 ? 'active' : '' }}" onclick="switchImage(this, '{{ $url }}')">
-                            <img src="{{ $url }}" alt="thumb {{ $i+1 }}">
+                        <div class="thumb-item active" onclick="switchImage(this, '{{ $fallbackImage }}')">
+                            <img src="{{ $fallbackImage }}" alt="{{ $product->name }}">
                         </div>
-                        @endforeach
                     @endforelse
                 </div>
 
@@ -287,8 +296,10 @@
                     <div class="main-img-wrap">
                         {{-- Badge --}}
                         <div class="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
-                            <span class="badge-sale">-18%</span>
-                            <span class="badge-hot">🔥 Hot</span>
+                            <span id="salePercentBadge" class="badge-sale {{ $isOnSale ? '' : 'hidden' }}">-{{ $isOnSale ? round((1 - $currentPrice / $originalPrice) * 100) : 0 }}%</span>
+                            @if($product->is_featured)
+                                <span class="badge-hot">Hot</span>
+                            @endif
                         </div>
                         {{-- Wishlist --}}
                         <button class="absolute top-4 right-4 z-10 w-10 h-10 bg-white rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all shadow-sm">
@@ -296,21 +307,21 @@
                         </button>
 
                         <img id="mainImage"
-                             src="{{ $product->image ? asset('storage/'.$product->image) : 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop&q=80' }}"
-                             alt="{{ $product->name ?? $demoProduct['name'] }}">
+                             src="{{ $mainImage ? asset('storage/'.$mainImage) : $fallbackImage }}"
+                             alt="{{ $product->name }}">
                     </div>
 
                     {{-- Mobile thumbs --}}
                     <div class="flex gap-2.5 mt-3 sm:hidden overflow-x-auto pb-1">
-                        @foreach([
-                            'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=400&auto=format&fit=crop&q=80',
-                            'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&auto=format&fit=crop&q=80',
-                        ] as $i => $url)
-                        <div class="thumb-item flex-shrink-0 {{ $i === 0 ? 'active' : '' }}" onclick="switchImage(this, '{{ $url }}')">
-                            <img src="{{ $url }}" alt="">
+                        @forelse($variantImages as $i => $img)
+                        <div class="thumb-item flex-shrink-0 {{ $i === 0 ? 'active' : '' }}" onclick="switchImage(this, '{{ asset('storage/'.$img) }}')">
+                            <img src="{{ asset('storage/'.$img) }}" alt="{{ $product->name }}">
                         </div>
-                        @endforeach
+                        @empty
+                        <div class="thumb-item flex-shrink-0 active" onclick="switchImage(this, '{{ $fallbackImage }}')">
+                            <img src="{{ $fallbackImage }}" alt="{{ $product->name }}">
+                        </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -322,12 +333,14 @@
                 <div>
                     <div class="flex items-center gap-2 mb-2">
                         <span class="text-xs font-black tracking-widest uppercase text-sky-600 bg-sky-50 border border-sky-100 px-2.5 py-1 rounded-lg">
-                            {{ $product->brand->name ?? $demoProduct['brand'] }}
+                            {{ $product->brand->name ?? 'ShopNova' }}
                         </span>
-                        <span class="text-xs text-slate-400 font-mono">SKU: {{ $product->sku ?? $demoProduct['sku'] }}</span>
+                        @if($primaryVariant)
+                            <span id="variantSku" class="text-xs text-slate-400 font-mono">SKU: {{ $primaryVariant->sku }}</span>
+                        @endif
                     </div>
                     <h1 class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight tracking-tight">
-                        {{ $product->name ?? $demoProduct['name'] }}
+                        {{ $product->name }}
                     </h1>
                 </div>
 
@@ -336,65 +349,62 @@
                     <div class="flex items-center gap-1.5">
                         <div class="flex">
                             @for($i = 1; $i <= 5; $i++)
-                                <svg class="w-4 h-4 {{ $i <= round($product->rating ?? $demoProduct['rating']) ? 'star' : 'star-empty' }}" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-4 h-4 star-empty" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                 </svg>
                             @endfor
                         </div>
-                        <span class="text-sm font-bold text-slate-700">{{ $product->rating ?? $demoProduct['rating'] }}</span>
-                        <span class="text-sm text-slate-400">({{ $product->review_count ?? $demoProduct['review_count'] }} đánh giá)</span>
+                        <span class="text-sm font-bold text-slate-700">0</span>
+                        <span class="text-sm text-slate-400">(0 đánh giá)</span>
                     </div>
                     <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                    <span class="text-sm text-slate-500">Đã bán <span class="font-bold text-slate-700">{{ number_format($product->sold ?? $demoProduct['sold']) }}</span></span>
+                    <span class="text-sm text-slate-500">Lượt xem <span class="font-bold text-slate-700">{{ number_format($product->view_count ?? 0) }}</span></span>
                     <span class="w-1 h-1 rounded-full bg-slate-300"></span>
                     <span class="text-sm text-emerald-600 font-semibold flex items-center gap-1">
                         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                        Còn {{ $product->stock ?? $demoProduct['stock'] }} sản phẩm
+                        {{ $variants->count() }} phiên bản
                     </span>
                 </div>
 
                 {{-- Price --}}
                 <div class="flex items-end gap-3">
-                    <span class="text-3xl font-black text-slate-900">
-                        {{ number_format($product->sale_price ?? $demoProduct['sale_price'], 0, ',', '.') }}đ
+                    <span id="variantCurrentPrice" class="text-3xl font-black text-slate-900">
+                        {{ number_format($currentPrice, 0, ',', '.') }}đ
                     </span>
-                    <span class="text-lg text-slate-400 line-through font-medium mb-0.5">
-                        {{ number_format($product->price ?? $demoProduct['price'], 0, ',', '.') }}đ
+                    <span id="variantOriginalPrice" class="text-lg text-slate-400 line-through font-medium mb-0.5 {{ $isOnSale ? '' : 'hidden' }}">
+                        {{ number_format($originalPrice, 0, ',', '.') }}đ
                     </span>
-                    <span class="badge-sale mb-1">Tiết kiệm {{ number_format(($demoProduct['price'] - $demoProduct['sale_price']), 0, ',', '.') }}đ</span>
+                    <span id="variantSavingBadge" class="badge-sale mb-1 {{ $isOnSale ? '' : 'hidden' }}">Tiết kiệm {{ number_format($savingAmount, 0, ',', '.') }}đ</span>
                 </div>
 
-                {{-- Variants: Color --}}
+                @foreach($attributeGroups as $attributeName => $values)
+                @php
+                    $activeColorValue = $values->first(fn ($value) => in_array($value->id, $primaryValueIds)) ?? $values->first();
+                @endphp
                 <div class="info-card">
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Màu sắc</p>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{{ $attributeName }}</p>
                     <div class="flex items-center gap-3 flex-wrap">
-                        @foreach([
-                            ['name' => 'Titan Đen', 'color' => '#1c1917'],
-                            ['name' => 'Titan Trắng', 'color' => '#f5f0eb'],
-                            ['name' => 'Titan Xanh', 'color' => '#2d6a9f'],
-                            ['name' => 'Titan Vàng', 'color' => '#d4a853'],
-                        ] as $i => $color)
-                        <button class="color-dot {{ $i === 0 ? 'active' : '' }}"
-                                style="background-color: {{ $color['color'] }}; {{ $color['color'] === '#f5f0eb' ? 'border: 2px solid #e2e8f0;' : '' }}"
-                                title="{{ $color['name'] }}"
-                                onclick="selectColor(this)">
-                        </button>
+                        @foreach($values as $i => $value)
+                            @if($value->extra_value)
+                                <button class="color-dot variant-option {{ in_array($value->id, $primaryValueIds) ? 'active' : '' }}"
+                                        style="background-color: {{ $value->extra_value }}; {{ strtolower($value->extra_value) === '#ffffff' ? 'border: 2px solid #e2e8f0;' : '' }}"
+                                        title="{{ $value->value }}"
+                                        data-name="{{ $value->value }}"
+                                        data-value-id="{{ $value->id }}"
+                                        onclick="selectColor(this)">
+                                </button>
+                            @else
+                                <button class="variant-btn variant-option {{ in_array($value->id, $primaryValueIds) ? 'active' : '' }}" data-value-id="{{ $value->id }}" onclick="selectVariant(this)">
+                                    {{ $value->value }}
+                                </button>
+                            @endif
                         @endforeach
                     </div>
-                    <p id="colorLabel" class="text-xs text-slate-500 mt-2 font-medium">Titan Đen</p>
+                    @if($values->contains(fn ($value) => filled($value->extra_value)))
+                        <p class="color-label text-xs text-slate-500 mt-2 font-medium">{{ $activeColorValue->value }}</p>
+                    @endif
                 </div>
-
-                {{-- Variants: Storage --}}
-                <div class="info-card">
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Dung lượng</p>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach(['256GB', '512GB', '1TB'] as $i => $storage)
-                        <button class="variant-btn {{ $i === 0 ? 'active' : '' }}" onclick="selectVariant(this)">
-                            {{ $storage }}
-                        </button>
-                        @endforeach
-                    </div>
-                </div>
+                @endforeach
 
                 {{-- Qty + Add to cart --}}
                 <div class="flex flex-col gap-3">
@@ -447,30 +457,21 @@
                 <button class="tab-btn" onclick="switchTab(this, 'tab-specs')">Thông số kỹ thuật</button>
                 <button class="tab-btn" onclick="switchTab(this, 'tab-reviews')">
                     Đánh giá
-                    <span class="ml-1.5 text-xs bg-sky-100 text-sky-600 font-bold px-1.5 py-0.5 rounded-full">142</span>
+                    <span class="ml-1.5 text-xs bg-sky-100 text-sky-600 font-bold px-1.5 py-0.5 rounded-full">0</span>
                 </button>
             </div>
 
             {{-- Tab: Description --}}
             <div id="tab-desc" class="tab-content p-6 sm:p-8">
                 <div class="prose prose-slate max-w-none text-sm sm:text-base leading-relaxed text-slate-600">
-                    <div class="text-base font-semibold text-slate-800 mb-4">{!! $product->description ?? $demoProduct['description'] !!}</div>
-                    <p>iPhone 15 Pro Max là đỉnh cao công nghệ của Apple năm 2024. Với thiết kế khung titan Grade 5 lần đầu xuất hiện trên iPhone, máy vừa nhẹ hơn thế hệ trước lại bền bỉ vượt trội. Chip A17 Pro được sản xuất trên tiến trình 3nm thế hệ 2 mang đến hiệu năng CPU tăng 10% và GPU tăng 20% so với A16 Bionic.</p>
-                    <ul class="mt-4 space-y-2 list-none pl-0">
-                        @foreach([
-                            'Chip A17 Pro — GPU 6 nhân mạnh nhất lịch sử iPhone',
-                            'Màn hình Super Retina XDR 6.7" ProMotion 120Hz — sáng tới 2000 nit',
-                            'Hệ thống camera Pro: Telephoto 5x, Ultra Wide 48MP, Chính 48MP',
-                            'Quay video ProRes 4K/60fps lưu thẳng lên iCloud',
-                            'USB-C với tốc độ USB 3 lên đến 20Gb/s',
-                            'Pin 4422mAh — sạc MagSafe 15W, sạc nhanh 27W',
-                        ] as $feature)
-                        <li class="flex items-start gap-2.5">
-                            <svg class="w-4 h-4 text-sky-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                            <span class="text-slate-600">{{ $feature }}</span>
-                        </li>
-                        @endforeach
-                    </ul>
+                    @if($product->short_description)
+                        <div class="text-base font-semibold text-slate-800 mb-4">{{ $product->short_description }}</div>
+                    @endif
+                    @if($product->description)
+                        {!! $product->description !!}
+                    @else
+                        <p>Chưa có mô tả cho sản phẩm này.</p>
+                    @endif
                 </div>
             </div>
 
@@ -479,25 +480,20 @@
                 <div class="overflow-hidden rounded-xl border border-slate-100">
                     <table class="w-full text-sm">
                         <tbody>
-                            @foreach([
-                                ['Màn hình', 'Super Retina XDR OLED 6.7", 2796 x 1290 px, 460 ppi'],
-                                ['Chip', 'Apple A17 Pro (3nm thế hệ 2)'],
-                                ['RAM', '8GB LPDDR5'],
-                                ['Bộ nhớ trong', '256GB / 512GB / 1TB NVMe'],
-                                ['Camera sau', '48MP (main) + 12MP (ultra wide) + 12MP (5x telephoto)'],
-                                ['Camera trước', '12MP TrueDepth, Face ID'],
-                                ['Pin', '4422mAh — sạc nhanh 27W, MagSafe 15W'],
-                                ['Hệ điều hành', 'iOS 17 (nâng cấp lên iOS 18)'],
-                                ['Kết nối', 'USB-C USB 3, Wi-Fi 6E, Bluetooth 5.3, NFC, 5G'],
-                                ['Kháng nước', 'IP68 — 6 mét trong 30 phút'],
-                                ['Khung máy', 'Titan Grade 5'],
-                                ['Kích thước', '159.9 × 76.7 × 8.25 mm — 221g'],
-                            ] as $i => $spec)
-                            <tr class="{{ $i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white' }}">
-                                <td class="py-3 px-4 font-semibold text-slate-500 w-2/5 border-b border-slate-100">{{ $spec[0] }}</td>
-                                <td class="py-3 px-4 text-slate-700 border-b border-slate-100">{{ $spec[1] }}</td>
+                            @forelse($specifications as $key => $value)
+                            @php
+                                $specName = is_array($value) ? ($value['name'] ?? $value[0] ?? $key) : $key;
+                                $specValue = is_array($value) ? ($value['value'] ?? $value[1] ?? '') : $value;
+                            @endphp
+                            <tr class="{{ $loop->index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white' }}">
+                                <td class="py-3 px-4 font-semibold text-slate-500 w-2/5 border-b border-slate-100">{{ $specName }}</td>
+                                <td class="py-3 px-4 text-slate-700 border-b border-slate-100">{{ $specValue }}</td>
                             </tr>
-                            @endforeach
+                            @empty
+                            <tr>
+                                <td colspan="2" class="py-4 px-4 text-slate-500 text-center">Chưa có thông số kỹ thuật.</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -508,21 +504,21 @@
                 {{-- Summary --}}
                 <div class="flex flex-col sm:flex-row gap-8 mb-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
                     <div class="text-center flex-shrink-0">
-                        <div class="text-6xl font-black text-slate-900">4.8</div>
+                        <div class="text-6xl font-black text-slate-900">0</div>
                         <div class="flex justify-center gap-0.5 mt-2">
                             @for($i = 1; $i <= 5; $i++)
-                            <svg class="w-5 h-5 {{ $i <= 5 ? 'star' : 'star-empty' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <svg class="w-5 h-5 star-empty" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                             @endfor
                         </div>
-                        <p class="text-sm text-slate-400 mt-1">142 đánh giá</p>
+                        <p class="text-sm text-slate-400 mt-1">0 đánh giá</p>
                     </div>
                     <div class="flex-1 space-y-2">
-                        @foreach([5 => 78, 4 => 42, 3 => 14, 2 => 5, 1 => 3] as $stars => $count)
+                        @foreach([5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0] as $stars => $count)
                         <div class="flex items-center gap-3">
                             <span class="text-xs font-bold text-slate-500 w-3">{{ $stars }}</span>
                             <svg class="w-3.5 h-3.5 star flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                             <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                <div class="h-full bg-amber-400 rounded-full" style="width: {{ round($count/142*100) }}%"></div>
+                                <div class="h-full bg-amber-400 rounded-full" style="width: 0%"></div>
                             </div>
                             <span class="text-xs text-slate-400 w-6 text-right">{{ $count }}</span>
                         </div>
@@ -532,36 +528,9 @@
 
                 {{-- Review list --}}
                 <div class="space-y-5">
-                    @foreach([
-                        ['name' => 'Nguyễn Minh Tuấn', 'stars' => 5, 'date' => '20/05/2026', 'text' => 'Sản phẩm tuyệt vời, đóng gói cẩn thận, giao hàng siêu nhanh. Camera chụp đẹp hơn hẳn điện thoại cũ, đặc biệt ảnh chụp ban đêm rất nét. Rất hài lòng với lần mua này!', 'verified' => true],
-                        ['name' => 'Trần Thị Lan Anh', 'stars' => 5, 'date' => '18/05/2026', 'text' => 'Mua lần 2 rồi vẫn rất hài lòng. Shop tư vấn nhiệt tình, máy chính hãng có seal, hiệu năng mượt mà không chê vào đâu được.', 'verified' => true],
-                        ['name' => 'Phạm Hoàng Nam', 'stars' => 4, 'date' => '15/05/2026', 'text' => 'Máy đẹp, pin trâu hơn mong đợi. Trừ 1 sao vì thời gian giao hơi lâu nhưng nhìn chung vẫn ổn.', 'verified' => false],
-                    ] as $review)
-                    <div class="p-5 bg-white border border-slate-100 rounded-2xl">
-                        <div class="flex items-start justify-between gap-3 mb-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 font-black text-sm flex-shrink-0">
-                                    {{ mb_substr($review['name'], 0, 1) }}
-                                </div>
-                                <div>
-                                    <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                        {{ $review['name'] }}
-                                        @if($review['verified'])
-                                        <span class="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded font-bold">✓ Đã mua</span>
-                                        @endif
-                                    </p>
-                                    <div class="flex gap-0.5 mt-0.5">
-                                        @for($i = 1; $i <= 5; $i++)
-                                        <svg class="w-3.5 h-3.5 {{ $i <= $review['stars'] ? 'star' : 'star-empty' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                                        @endfor
-                                    </div>
-                                </div>
-                            </div>
-                            <span class="text-xs text-slate-400 flex-shrink-0">{{ $review['date'] }}</span>
-                        </div>
-                        <p class="text-sm text-slate-600 leading-relaxed">{{ $review['text'] }}</p>
+                    <div class="p-5 bg-white border border-slate-100 rounded-2xl text-sm text-slate-500">
+                        Chưa có đánh giá cho sản phẩm này.
                     </div>
-                    @endforeach
                 </div>
             </div>
         </div>
@@ -581,36 +550,24 @@
 
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 @forelse($relatedProducts ?? [] as $related)
+                @php
+                    $relatedImage = $related->variants->pluck('image')->filter()->first();
+                @endphp
                 <a href="{{ route('client.product.show', $related->slug) }}" class="related-card block">
                     <div class="related-img">
-                        <img src="{{ $related->image ? asset('storage/'.$related->image) : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=60' }}"
+                        <img src="{{ $relatedImage ? asset('storage/'.$relatedImage) : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=60' }}"
                              alt="{{ $related->name }}">
                     </div>
                     <div class="p-3.5">
                         <span class="text-[10px] font-black tracking-widest uppercase text-slate-400">{{ $related->brand->name ?? '' }}</span>
                         <h4 class="text-sm font-bold text-slate-800 line-clamp-2 leading-snug mt-0.5">{{ $related->name }}</h4>
-                        <p class="text-sm font-black text-slate-900 mt-2">{{ number_format($related->sale_price ?? $related->price, 0, ',', '.') }}đ</p>
+                        <p class="text-sm font-black text-slate-900 mt-2">{{ number_format($related->min_price, 0, ',', '.') }}đ</p>
                     </div>
                 </a>
                 @empty
-                @foreach([
-                    ['name' => 'iPhone 15 Pro 256GB', 'price' => '26,490,000đ', 'img' => 'https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&auto=format&fit=crop&q=60'],
-                    ['name' => 'AirPods Pro 2nd Gen', 'price' => '5,990,000đ', 'img' => 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=400&auto=format&fit=crop&q=60'],
-                    ['name' => 'Apple Watch Ultra 2', 'price' => '19,990,000đ', 'img' => 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&auto=format&fit=crop&q=60'],
-                    ['name' => 'MacBook Air M3', 'price' => '29,990,000đ', 'img' => 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&auto=format&fit=crop&q=60'],
-                    ['name' => 'iPad Pro M4 11"', 'price' => '23,990,000đ', 'img' => 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&auto=format&fit=crop&q=60'],
-                ] as $demo)
-                <a href="{{ route('client.shop') }}" class="related-card block">
-                    <div class="related-img">
-                        <img src="{{ $demo['img'] }}" alt="{{ $demo['name'] }}">
-                    </div>
-                    <div class="p-3.5">
-                        <span class="text-[10px] font-black tracking-widest uppercase text-slate-400">Apple</span>
-                        <h4 class="text-sm font-bold text-slate-800 line-clamp-2 leading-snug mt-0.5">{{ $demo['name'] }}</h4>
-                        <p class="text-sm font-black text-slate-900 mt-2">{{ $demo['price'] }}</p>
-                    </div>
-                </a>
-                @endforeach
+                <div class="col-span-full p-5 bg-white border border-slate-100 rounded-2xl text-sm text-slate-500">
+                    Chưa có sản phẩm liên quan.
+                </div>
                 @endforelse
             </div>
         </div>
@@ -621,6 +578,64 @@
 
 @push('scripts')
 <script>
+const productVariants = @json($variantPayload);
+
+function formatCurrency(value) {
+    return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
+}
+
+function setHidden(element, hidden) {
+    if (!element) return;
+    element.classList.toggle('hidden', hidden);
+}
+
+function getSelectedValueIds() {
+    return Array.from(document.querySelectorAll('.variant-option.active'))
+        .map(option => Number(option.dataset.valueId))
+        .filter(Boolean);
+}
+
+function findSelectedVariant() {
+    const selectedIds = getSelectedValueIds();
+
+    return productVariants.find(variant => {
+        const variantValueIds = variant.attribute_value_ids.map(Number);
+        return selectedIds.every(id => variantValueIds.includes(id));
+    });
+}
+
+function updateVariantInfo() {
+    const variant = findSelectedVariant();
+    if (!variant) return;
+
+    const currentPrice = variant.final_price;
+    const originalPrice = variant.price;
+    const hasSale = variant.sale_price !== null && Number(variant.sale_price) < Number(variant.price);
+    const savingAmount = Math.max(0, originalPrice - currentPrice);
+    const discountPercent = hasSale ? Math.round((1 - currentPrice / originalPrice) * 100) : 0;
+
+    document.getElementById('variantCurrentPrice').textContent = formatCurrency(currentPrice);
+    document.getElementById('variantOriginalPrice').textContent = formatCurrency(originalPrice);
+    document.getElementById('variantSavingBadge').textContent = 'Tiết kiệm ' + formatCurrency(savingAmount);
+    setHidden(document.getElementById('variantOriginalPrice'), !hasSale);
+    setHidden(document.getElementById('variantSavingBadge'), !hasSale);
+
+    const salePercentBadge = document.getElementById('salePercentBadge');
+    if (salePercentBadge) {
+        salePercentBadge.textContent = '-' + discountPercent + '%';
+        setHidden(salePercentBadge, !hasSale);
+    }
+
+    const sku = document.getElementById('variantSku');
+    if (sku) {
+        sku.textContent = 'SKU: ' + variant.sku;
+    }
+
+    if (variant.image_url) {
+        document.getElementById('mainImage').src = variant.image_url;
+    }
+}
+
 // Switch main image
 function switchImage(thumb, src) {
     document.getElementById('mainImage').src = src;
@@ -639,18 +654,21 @@ function changeQty(delta) {
 function selectVariant(btn) {
     btn.closest('.info-card').querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    updateVariantInfo();
 }
 
-// Color select
-const colorNames = ['Titan Đen', 'Titan Trắng', 'Titan Xanh', 'Titan Vàng'];
 function selectColor(dot) {
-    const dots = document.querySelectorAll('.color-dot');
+    const card = dot.closest('.info-card');
+    const dots = card.querySelectorAll('.color-dot');
     dots.forEach((d, i) => {
         d.classList.remove('active');
     });
     dot.classList.add('active');
-    const idx = Array.from(dots).indexOf(dot);
-    document.getElementById('colorLabel').textContent = colorNames[idx] ?? '';
+    const label = card.querySelector('.color-label');
+    if (label) {
+        label.textContent = dot.dataset.name ?? '';
+    }
+    updateVariantInfo();
 }
 
 // Tabs
