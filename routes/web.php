@@ -5,79 +5,139 @@ use App\Http\Controllers\Client\ProductController as ClientProductController;
 use App\Http\Controllers\Client\CartController;
 use Illuminate\Support\Facades\Route;
 
-//===================== Admin =======================
+/*
+|--------------------------------------------------------------------------
+| ADMIN CONTROLLERS
+|--------------------------------------------------------------------------
+*/
+
+use App\Http\Controllers\Admin\BrandController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\AttributeController;
-use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\BrandController;
-//===================== Admin =======================
 
-// Nhóm các Route dành riêng cho ADMIN
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
+/*
+|--------------------------------------------------------------------------
+| CLIENT ROUTES
+|--------------------------------------------------------------------------
+*/
 
-    // Cụm quản lý Thương hiệu
-    Route::prefix('categories')->name('admin.categories.')->group(function () {
-        Route::get('/', [CategoryController::class, 'index'])->name('index');
-        Route::post('/', [CategoryController::class, 'store'])->name('store');
-        Route::get('/{category}/edit', [CategoryController::class, 'edit'])->name('edit');
-        Route::put('/{category}', [CategoryController::class, 'update'])->name('update');
-        Route::delete('/{category}', [CategoryController::class, 'destroy'])->name('destroy');
+Route::get('/', [ClientProductController::class, 'index'])
+    ->name('home');
+
+Route::prefix('shop')
+    ->name('client.')
+    ->group(function () {
+
+        Route::get('/{category_slug?}', [ClientProductController::class, 'shop'])
+            ->name('shop');
+
+        Route::get('/product/{slug}', [ClientProductController::class, 'show'])
+            ->name('product.show');
     });
 
-    // Cụm quản lý Thuộc tính động
-    Route::prefix('attributes')->name('admin.attributes.')->group(function () {
-        Route::get('/', [AttributeController::class, 'index'])->name('index');
-        Route::post('/', [AttributeController::class, 'store'])->name('store');
-        Route::delete('/{attribute}', [AttributeController::class, 'destroy'])->name('destroy');
+/*
+|--------------------------------------------------------------------------
+| AUTH USER ROUTES
+|--------------------------------------------------------------------------
+*/
 
-        // THÊM 2 DÒNG NÀY ĐỂ XỬ LÝ SỬA THUỘC TÍNH
-        Route::get('/{attribute}/edit', [AttributeController::class, 'edit'])->name('edit');
-        Route::put('/{attribute}', [AttributeController::class, 'update'])->name('update');
+Route::middleware('auth')->group(function () {
 
-        // Route dành cho các giá trị con
-        Route::post('/{attribute}/values', [AttributeController::class, 'storeValue'])->name('storeValue');
-        Route::delete('/values/{value}', [AttributeController::class, 'destroyValue'])->name('destroyValue');
-    });
+    Route::prefix('profile')
+        ->name('profile.')
+        ->group(function () {
 
-    // QUẢN LÝ SẢN PHẨM CRUD
-    Route::prefix('products')->name('admin.products.')->group(function () {
-        Route::get('/', [ProductController::class, 'index'])->name('index');
-        Route::get('/create', [ProductController::class, 'create'])->name('create');
-        Route::post('/', [ProductController::class, 'store'])->name('store');
+            Route::get('/', [ProfileController::class, 'edit'])
+                ->name('edit');
 
-        Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
-        Route::put('/{product}', [ProductController::class, 'update'])->name('update');
-        Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
-    });
+            Route::patch('/', [ProfileController::class, 'update'])
+                ->name('update');
 
-    // QUẢN LÝ THƯƠNG HIỆU (BRANDS)
-    Route::prefix('brands')->name('admin.brands.')->group(function () {
-        Route::get('/', [BrandController::class, 'index'])->name('index');
-        Route::post('/', [BrandController::class, 'store'])->name('store');
-        Route::put('/{brand}', [BrandController::class, 'update'])->name('update');
-        Route::delete('/{brand}', [BrandController::class, 'destroy'])->name('destroy');
-    });
+            Route::delete('/', [ProfileController::class, 'destroy'])
+                ->name('destroy');
+        });
+
+    Route::prefix('cart')
+        ->name('client.cart.')
+        ->group(function () {
+
+            Route::get('/', [CartController::class, 'index'])
+                ->name('index');
+
+            Route::post('/add', [CartController::class, 'add'])
+                ->name('add');
+
+            Route::patch('/update', [CartController::class, 'update'])
+                ->name('update');
+
+            Route::delete('/remove/{id}', [CartController::class, 'remove'])
+                ->name('remove');
+
+            Route::delete('/clear', [CartController::class, 'clear'])
+                ->name('clear');
+        });
+
+    Route::get('/checkout', [CartController::class, 'checkout'])
+        ->name('client.checkout');
+
+    Route::post('/checkout', [CartController::class, 'placeOrder'])
+        ->name('client.checkout.place');
+
+    Route::get('/order-success/{order}', [CartController::class, 'orderSuccess'])
+        ->name('client.order.success');
 });
 
-// Nhóm các Route dành riêng cho VENDOR (Nhà bán hàng)
-Route::middleware(['auth', 'role:vendor,admin'])->prefix('vendor')->group(function () {
-    Route::get('/dashboard', function () {
-        return 'Trang quản lý gian hàng của Thương hiệu';
-    })->name('vendor.dashboard');
-});
+/*
+|--------------------------------------------------------------------------
+| ADMIN ROUTES
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', function () {
+            return view('admin.dashboard');
+        })->name('dashboard');
+
+        Route::resource('categories', CategoryController::class)
+            ->except(['show', 'create']);
+
+        Route::resource('attributes', AttributeController::class)
+            ->except(['show', 'create']);
+
+        Route::post(
+            'attributes/{attribute}/values',
+            [AttributeController::class, 'storeValue']
+        )->name('attributes.storeValue');
+
+        Route::delete(
+            'attributes/values/{value}',
+            [AttributeController::class, 'destroyValue']
+        )->name('attributes.destroyValue');
+
+        Route::resource('products', AdminProductController::class)
+            ->except(['show']);
+
+        Route::resource('brands', BrandController::class)
+            ->except(['show', 'create', 'edit']);
+    });
+
+Route::middleware(['auth', 'role:vendor,admin'])
+    ->prefix('vendor')
+    ->name('vendor.')
+    ->group(function () {
+
+        Route::get('/dashboard', function () {
+            return 'Trang quản lý gian hàng';
+        })->name('dashboard');
+    });
 
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
 // Client routes
 Route::get('/', [ClientProductController::class, 'index'])->name('home');
@@ -91,6 +151,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile/orders', [ProfileController::class, 'orders'])->name('client.profile.orders');
+    Route::get('/profile/orders/{order}', [ProfileController::class, 'orderDetail'])->name('client.profile.orders.show');
 
     // Cart
     Route::get('/cart', [CartController::class, 'index'])->name('client.cart.index');
