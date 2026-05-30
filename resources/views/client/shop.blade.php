@@ -56,8 +56,8 @@
     }
     .product-card:hover {
         border-color: rgba(14, 165, 233, 0.25);
-        box-shadow: 
-            0 20px 25px -5px rgba(14, 165, 233, 0.05), 
+        box-shadow:
+            0 20px 25px -5px rgba(14, 165, 233, 0.05),
             0 10px 10px -5px rgba(14, 165, 233, 0.02),
             0 0 0 1px rgba(14, 165, 233, 0.05);
         transform: translateY(-5px);
@@ -208,7 +208,7 @@
 
         {{-- Main Filter Form --}}
         <form action="{{ URL::current() }}" method="GET" id="filter-form">
-            
+
             @if(request('search'))
                 <input type="hidden" name="search" value="{{ request('search') }}">
             @endif
@@ -339,7 +339,7 @@
                                     ['label' => '5 triệu – 15 triệu', 'min' => '5000000', 'max' => '15000000'],
                                     ['label' => 'Trên 15 triệu', 'min' => '15000000', 'max' => ''],
                                 ] as $range)
-                                <button type="button" 
+                                <button type="button"
                                         onclick="setPriceRange('{{ $range['min'] }}', '{{ $range['max'] }}')"
                                         class="filter-btn {{ request('max_price') == $range['max'] && request('min_price') == $range['min'] ? 'active' : '' }}">
                                     {{ $range['label'] }}
@@ -381,13 +381,22 @@
                                 @endif
                             </div>
 
-                            {{-- Image Wrapper --}}
+                            {{-- Image Wrapper - Đã sửa lỗi quét cả thumbnail và image --}}
                             <div class="product-img-wrap bg-gradient-to-br from-slate-50 to-slate-100/40">
-                                @if($product->image)
+                                @if(!empty($product->thumbnail))
+                                    {{-- Nếu database của bạn đặt tên cột là thumbnail --}}
+                                    <img src="{{ asset('storage/' . $product->thumbnail) }}" alt="{{ $product->name }}">
+                                @elseif(!empty($product->image))
+                                    {{-- Nếu database của bạn đặt tên cột là image --}}
                                     <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
+                                @elseif($product->variants->isNotEmpty() && !empty($product->variants->first()->image))
+                                    {{-- Nếu sản phẩm cha không có ảnh, tự động lấy ảnh của biến thể đầu tiên --}}
+                                    <img src="{{ asset('storage/' . $product->variants->first()->image) }}" alt="{{ $product->name }}">
                                 @else
+                                    {{-- Ảnh dự phòng nếu không tìm thấy bất kỳ nguồn ảnh nào --}}
                                     <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60" alt="{{ $product->name }}">
                                 @endif
+
                                 <div class="quick-view-overlay">
                                     <a href="{{ route('client.product.show', $product->slug) }}"
                                     class="w-11 h-11 bg-white/90 rounded-2xl flex items-center justify-center shadow-md text-slate-700 hover:bg-sky-500 hover:text-white hover:scale-105 transition-all duration-300 border border-slate-100">
@@ -435,7 +444,7 @@
                     @if(isset($products) && $products->hasPages())
                     <div class="mt-12 flex justify-center">
                         <div class="inline-flex items-center gap-1.5 p-2 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
-                            
+
                             {{-- Nút quay lại (Previous) --}}
                             @if($products->onFirstPage())
                                 <span class="page-btn opacity-30 cursor-not-allowed">

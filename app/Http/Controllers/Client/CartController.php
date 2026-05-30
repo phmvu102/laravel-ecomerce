@@ -3,222 +3,283 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 
 class CartController extends Controller
 {
-    public function index(): View
+    private function getCart()
     {
-        [$cart, $subtotal] = $this->cartSummary();
+        return Cart::firstOrCreate([
+            'user_id' => auth()->id()
+        ]);
+    }
+
+    public function index()
+    {
+        $cart = $this->getCart()
+            ->items()
+            ->with('productVariant.product')
+            ->get();
+
+        $subtotal = $cart->sum(fn($item) => $item->price * $item->quantity);
 
         return view('client.cart', compact('cart', 'subtotal'));
     }
 
-    public function add(Request $request): RedirectResponse|JsonResponse
+    public function add(Request $request)
     {
-        $validated = $request->validate([
-            'product_id' => ['nullable', 'required_without_all:product_variant_id,variant_id', 'integer', 'exists:products,id'],
-            'product_variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
-            'variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
-            'quantity' => ['nullable', 'integer', 'min:1', 'max:99'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'product_id' => ['nullable', 'integer', 'exists:products,id'],
+                'variant_id' => ['nullable', 'integer', 'exists:product_variants,id'],
+                'quantity' => ['nullable', 'integer', 'min:1'],
+            ]);
 
-        $variantId = $validated['product_variant_id'] ?? $validated['variant_id'] ?? null;
-        $variant = $variantId
-            ? ProductVariant::with('product')->findOrFail($variantId)
-            : Product::with('variants')->findOrFail($validated['product_id'])->variants()->orderBy('price')->first();
+            $variant = null;
 
-        if (! $variant) {
-            return $this->cartResponse($request, false, 'Product is not available.');
+            if (!empty($validated['variant_id'])) {
+                $variant = ProductVariant::with('product')
+                    ->findOrFail($validated['variant_id']);
+            } else {
+                $variant = Product::with('variants')
+                    ->findOrFail($validated['product_id'])
+                    ->variants()
+                    ->orderBy('price')
+                    ->first();
+            }
+
+            if (!$variant) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Không tìm thấy biến thể.'
+                    ], 404);
+                }
+                return back()->with('error', 'Không tìm thấy biến thể.');
+            }
+
+            $cart = $this->getCart();
+
+            $quantity = $validated['quantity'] ?? 1;
+
+            $item = CartItem::where([
+                'cart_id' => $cart->id,
+                'product_variant_id' => $variant->id,
+            ])->first();
+
+            $price = $variant->sale_price ?? $variant->price;
+
+            if ($item) {
+                $item->increment('quantity', $quantity);
+            } else {
+                CartItem::create([
+                    'cart_id' => $cart->id,
+                    'product_variant_id' => $variant->id,
+                    'quantity' => $quantity,
+                    'price' => $price,
+                ]);
+            }
+
+            // Đếm tổng số sản phẩm trong giỏ
+            $cartCount = $cart->items()->sum('quantity');
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã thêm vào giỏ hàng.',
+                    'cart_count' => $cartCount
+                ]);
+            }
+
+            return back()->with('success', 'Đã thêm vào giỏ hàng.');
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 400);
+            }
+            return back()->with('error', $e->getMessage());
         }
-
-        $quantity = (int) ($validated['quantity'] ?? 1);
-        $cart = session('cart', []);
-        $key = (string) $variant->id;
-        $price = (float) ($variant->sale_price ?? $variant->price);
-
-        if (isset($cart[$key])) {
-            $cart[$key]['quantity'] += $quantity;
-        } else {
-            $cart[$key] = [
-                'variant_id' => $variant->id,
-                'product_id' => $variant->product_id,
-                'name' => $variant->product->name,
-                'sku' => $variant->sku,
-                'image' => $variant->image,
-                'price' => $price,
-                'quantity' => $quantity,
-            ];
-        }
-
-        $this->storeCart($cart);
-
-        return $this->cartResponse($request, true, 'Added to cart.');
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request)
     {
         $validated = $request->validate([
-            'items' => ['nullable', 'array'],
-            'items.*' => ['integer', 'min:0', 'max:99'],
-            'id' => ['nullable', 'integer'],
-            'quantity' => ['nullable', 'integer', 'min:0', 'max:99'],
+            'items' => ['required', 'array'],
         ]);
 
-        $cart = session('cart', []);
-        $items = $validated['items'] ?? [];
+        $cart = $this->getCart();
 
-        if (isset($validated['id'], $validated['quantity'])) {
-            $items[$validated['id']] = $validated['quantity'];
-        }
+        foreach ($validated['items'] as $id => $quantity) {
 
-        foreach ($items as $id => $quantity) {
-            $key = (string) $id;
+            $item = CartItem::where('cart_id', $cart->id)
+                ->where('product_variant_id', $id)
+                ->first();
 
-            if (! isset($cart[$key])) {
+            if (!$item) {
                 continue;
             }
 
-            if ((int) $quantity <= 0) {
-                unset($cart[$key]);
+            if ($quantity <= 0) {
+                $item->delete();
             } else {
-                $cart[$key]['quantity'] = (int) $quantity;
+                $item->update([
+                    'quantity' => $quantity
+                ]);
             }
         }
 
-        $this->storeCart($cart);
-
-        return back()->with('success', 'Cart updated.');
+        return back()->with('success', 'Cập nhật giỏ hàng thành công.');
     }
 
-    public function remove(int $id): RedirectResponse
+    public function remove(Request $request, $id)
     {
-        $cart = session('cart', []);
-        unset($cart[(string) $id]);
-        $this->storeCart($cart);
+        try {
+            $cart = $this->getCart();
 
-        return back()->with('success', 'Item removed.');
+            CartItem::where('cart_id', $cart->id)
+                ->where('product_variant_id', $id)
+                ->delete();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã xóa sản phẩm.'
+                ]);
+            }
+
+            return back()->with('success', 'Đã xóa sản phẩm.');
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 400);
+            }
+            return back()->with('error', $e->getMessage());
+        }
     }
 
-    public function clear(): RedirectResponse
+    public function clear(Request $request)
     {
-        session()->forget(['cart', 'cart_count']);
+        try {
+            $this->getCart()->items()->delete();
 
-        return back()->with('success', 'Cart cleared.');
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã xóa giỏ hàng.'
+                ]);
+            }
+
+            return back()->with('success', 'Đã xóa giỏ hàng.');
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 400);
+            }
+            return back()->with('error', $e->getMessage());
+        }
     }
 
-    public function checkout(): View|RedirectResponse
+    public function checkout()
     {
-        [$cart, $subtotal] = $this->cartSummary();
+        $user = auth()->user();
+        $cart = $this->getCart()
+            ->items()
+            ->with('productVariant.product')
+            ->get();
 
         if ($cart->isEmpty()) {
-            return redirect()->route('client.cart.index')->with('error', 'Your cart is empty.');
+            return redirect()->route('client.shop')->with('warning', 'Giỏ hàng trống.');
         }
 
-        return view('client.checkout', compact('cart', 'subtotal'));
+        $subtotal = $cart->sum(fn($item) => $item->price * $item->quantity);
+
+        return view('client.checkout', compact('cart', 'subtotal', 'user'));
     }
 
-    public function placeOrder(Request $request): RedirectResponse
+    public function placeOrder(Request $request)
     {
-        [$cart, $subtotal] = $this->cartSummary();
+        try {
+            $validated = $request->validate([
+                'shipping_name' => ['required', 'string', 'max:255'],
+                'shipping_phone' => ['required', 'string', 'max:20'],
+                'shipping_address' => ['required', 'string', 'max:500'],
+                'customer_note' => ['nullable', 'string', 'max:500'],
+                'payment_method' => ['required', 'in:COD,VNPAY,MOMO'],
+            ]);
 
-        if ($cart->isEmpty()) {
-            return redirect()->route('client.cart.index')->with('error', 'Your cart is empty.');
-        }
+            $cart = $this->getCart()
+                ->items()
+                ->with('productVariant.product')
+                ->get();
 
-        $validated = $request->validate([
-            'shipping_name' => ['required', 'string', 'max:255'],
-            'shipping_phone' => ['required', 'string', 'max:30'],
-            'shipping_address' => ['required', 'string', 'max:1000'],
-            'customer_note' => ['nullable', 'string', 'max:2000'],
-            'payment_method' => ['nullable', 'string', 'max:50'],
-        ]);
+            if ($cart->isEmpty()) {
+                return back()->with('error', 'Giỏ hàng trống.');
+            }
 
-        $order = DB::transaction(function () use ($cart, $subtotal, $validated) {
+            $subtotal = $cart->sum(fn($item) => $item->price * $item->quantity);
+            $shippingFee = 0; // Có thể tính toán dựa trên địa chỉ
+            $totalAmount = $subtotal + $shippingFee;
+
+            // Tạo đơn hàng
             $order = Order::create([
-                'order_code' => $this->makeOrderCode(),
+                'order_code' => 'ORD-' . Str::upper(Str::random(8)) . '-' . time(),
                 'user_id' => auth()->id(),
                 'subtotal' => $subtotal,
-                'shipping_fee' => 0,
+                'shipping_fee' => $shippingFee,
                 'discount_amount' => 0,
-                'total_amount' => $subtotal,
+                'total_amount' => $totalAmount,
                 'shipping_name' => $validated['shipping_name'],
                 'shipping_phone' => $validated['shipping_phone'],
                 'shipping_address' => $validated['shipping_address'],
                 'customer_note' => $validated['customer_note'] ?? null,
-                'payment_method' => $validated['payment_method'] ?? 'COD',
+                'payment_method' => $validated['payment_method'],
+                'status' => 'pending',
+                'payment_status' => 'unpaid',
                 'source' => 'web',
             ]);
 
+            // Tạo order items từ cart
             foreach ($cart as $item) {
                 $order->items()->create([
-                    'product_variant_id' => $item['variant_id'],
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                    'total' => $item['price'] * $item['quantity'],
+                    'product_variant_id' => $item->product_variant_id,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                    'total' => $item->price * $item->quantity,
                 ]);
             }
 
-            return $order;
-        });
+            // Xóa giỏ hàng sau khi đặt hàng
+            $this->getCart()->items()->delete();
 
-        session()->forget(['cart', 'cart_count']);
-
-        return redirect()->route('client.order.success', $order);
+            return redirect()->route('client.order.success', $order)->with('success', 'Đặt hàng thành công!');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Lỗi đặt hàng: ' . $e->getMessage());
+        }
     }
 
-    public function orderSuccess(Order $order): View
+    public function orderSuccess(Order $order)
     {
-        abort_unless($order->user_id === auth()->id(), 403);
+        // Kiểm tra quyền truy cập
+        if ($order->user_id !== auth()->id()) {
+            return redirect()->route('client.shop')->with('error', 'Không có quyền xem đơn hàng này.');
+        }
 
         $order->load('items.productVariant.product');
 
         return view('client.order-success', compact('order'));
     }
-
-    private function cartSummary(): array
-    {
-        $cart = collect(session('cart', []));
-        $subtotal = $cart->sum(fn (array $item): float => $item['price'] * $item['quantity']);
-
-        return [$cart, $subtotal];
-    }
-
-    private function storeCart(array $cart): void
-    {
-        session([
-            'cart' => $cart,
-            'cart_count' => collect($cart)->sum('quantity'),
-        ]);
-    }
-
-    private function cartResponse(Request $request, bool $success, string $message): RedirectResponse|JsonResponse
-    {
-        if ($request->expectsJson() || $request->isJson()) {
-            return response()->json([
-                'success' => $success,
-                'message' => $message,
-                'cart_count' => session('cart_count', 0),
-            ], $success ? 200 : 422);
-        }
-
-        return back()->with($success ? 'success' : 'error', $message);
-    }
-
-    private function makeOrderCode(): string
-    {
-        do {
-            $code = 'WEB-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4));
-        } while (Order::where('order_code', $code)->exists());
-
-        return $code;
-    }
 }
+

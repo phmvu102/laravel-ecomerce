@@ -230,22 +230,32 @@
 @section('content')
 @php
     $variants = $product->variants ?? collect();
+
     $primaryVariant = $variants->sortBy(fn ($variant) => $variant->sale_price ?? $variant->price)->first();
+
     $primaryValueIds = $primaryVariant
         ? $primaryVariant->attributeValues->pluck('id')->all()
         : [];
     $variantImages = $variants->pluck('image')->filter()->unique()->values();
+
     $fallbackImage = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80';
+
     $mainImage = $variantImages->first();
+
     $currentPrice = $primaryVariant ? ($primaryVariant->sale_price ?? $primaryVariant->price) : $product->min_price;
+
     $originalPrice = $primaryVariant ? $primaryVariant->price : $product->original_price;
+
     $isOnSale = $product->is_on_sale && $originalPrice > $currentPrice;
+
     $savingAmount = max(0, $originalPrice - $currentPrice);
+
     $attributeGroups = $variants
         ->flatMap(fn ($variant) => $variant->attributeValues)
         ->unique('id')
         ->groupBy(fn ($value) => $value->attribute->name ?? $value->attribute->code ?? 'Thuộc tính');
     $specifications = $product->specifications ?? [];
+
     $variantPayload = $variants->map(fn ($variant) => [
         'id' => $variant->id,
         'sku' => $variant->sku,
@@ -253,7 +263,8 @@
         'sale_price' => $variant->sale_price ? (float) $variant->sale_price : null,
         'final_price' => (float) ($variant->sale_price ?? $variant->price),
         'image_url' => $variant->image ? asset('storage/'.$variant->image) : null,
-        'attribute_value_ids' => $variant->attributeValues->pluck('id')->values(),
+        'attribute_value_ids' => $variant->attributeValues->pluck('id')->values()->all(),
+        'stock' => (int) ($variant->stock ?? $variant->quantity ?? 0), // Lấy số lượng tồn kho
     ])->values();
 @endphp
 
@@ -408,23 +419,30 @@
 
                 {{-- Qty + Add to cart --}}
                 <div class="flex flex-col gap-3">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 flex-wrap">
                         <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Số lượng:</p>
                         <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1">
-                            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                            <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
                             <span id="qtyDisplay" class="w-10 text-center text-sm font-bold text-slate-800">1</span>
-                            <button class="qty-btn" onclick="changeQty(1)">+</button>
+                            <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
                         </div>
+
+                        {{-- Hiển thị số lượng kho tại đây --}}
+                        <span id="variantStockDisplay" class="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg ml-2">
+                            Đang kiểm tra kho...
+                        </span>
                     </div>
 
+                    <input type="hidden" id="selectedVariantId" value="{{ $primaryVariant ? $primaryVariant->id : '' }}">
+
                     <div class="grid grid-cols-2 gap-3 mt-1">
-                        <button class="btn-primary">
+                        <button type="button" id="btnAddToCart" onclick="handleCartAction('add')" class="btn-primary">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                            Thêm vào giỏ
+                            <span class="btn-text">Thêm vào giỏ</span>
                         </button>
-                        <button class="btn-secondary">
+                        <button type="button" id="btnBuyNow" onclick="handleCartAction('buy')" class="btn-secondary">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            Mua ngay
+                            <span class="btn-text">Mua ngay</span>
                         </button>
                     </div>
                 </div>
@@ -578,105 +596,204 @@
 
 @push('scripts')
 <script>
-const productVariants = @json($variantPayload);
+    const productVariants = @json($variantPayload);
+    let currentQuantity = 1;
+    let maxAvailableStock = 99; // Mặc định giới hạn tối đa
 
-function formatCurrency(value) {
-    return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
-}
+    function formatVND(amount) {
+        return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+    }
 
-function setHidden(element, hidden) {
-    if (!element) return;
-    element.classList.toggle('hidden', hidden);
-}
+    // Tăng giảm số lượng có check kèm với số lượng tồn kho thực tế của biến thể đó
+    function changeQty(amount) {
+        currentQuantity += amount;
+        if (currentQuantity < 1) currentQuantity = 1;
+        if (currentQuantity > maxAvailableStock) {
+            currentQuantity = maxAvailableStock;
+            alert(`Sản phẩm này chỉ còn tối đa ${maxAvailableStock} sản phẩm trong kho!`);
+        }
+        document.getElementById('qtyDisplay').textContent = currentQuantity;
+    }
 
-function getSelectedValueIds() {
-    return Array.from(document.querySelectorAll('.variant-option.active'))
-        .map(option => Number(option.dataset.valueId))
-        .filter(Boolean);
-}
+    function switchImage(element, imgUrl) {
+        document.getElementById('mainImage').src = imgUrl;
+        document.querySelectorAll('.thumb-item').forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
+    }
 
-function findSelectedVariant() {
-    const selectedIds = getSelectedValueIds();
+    function selectColor(element) {
+        const card = element.closest('.info-card');
+        card.querySelectorAll('.color-dot').forEach(dot => dot.classList.remove('active'));
+        element.setAttribute('class', element.getAttribute('class') + ' active'); // Đảm bảo gán lại class active chuẩn xác
+        element.classList.add('active');
 
-    return productVariants.find(variant => {
-        const variantValueIds = variant.attribute_value_ids.map(Number);
-        return selectedIds.every(id => variantValueIds.includes(id));
+        const label = card.querySelector('.color-label');
+        if (label) label.textContent = element.getAttribute('data-name');
+
+        syncVariantDetails();
+    }
+
+    function selectVariant(element) {
+        const card = element.closest('.info-card');
+        card.querySelectorAll('.variant-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+
+        syncVariantDetails();
+    }
+
+    // HÀM LIVE-SYNC: Tự động chạy lại mỗi khi người dùng nhấn bất kì thuộc tính nào
+    function syncVariantDetails() {
+        // Gom toàn bộ thuộc tính đang được click Active trên màn hình
+        const activeOptionIds = Array.from(document.querySelectorAll('.variant-option.active'))
+            .map(el => parseInt(el.getAttribute('data-value-id')));
+
+        // Tìm kiếm biến thể khớp hoàn toàn với cụm thuộc tính đã chọn
+        const matchVariant = productVariants.find(variant => {
+            return variant.attribute_value_ids.length === activeOptionIds.length &&
+                   variant.attribute_value_ids.every(id => activeOptionIds.includes(id));
+        });
+
+        const currentPriceEl = document.getElementById('variantCurrentPrice');
+        const originalPriceEl = document.getElementById('variantOriginalPrice');
+        const savingBadgeEl = document.getElementById('variantSavingBadge');
+        const salePercentBadgeEl = document.getElementById('salePercentBadge');
+        const skuEl = document.getElementById('variantSku');
+        const stockDisplayEl = document.getElementById('variantStockDisplay');
+
+        const btnAdd = document.getElementById('btnAddToCart');
+        const btnBuy = document.getElementById('btnBuyNow');
+
+        if (matchVariant) {
+            // Trường hợp 1: TÌM THẤY BIẾN THỂ PHÙ HỢP
+            document.getElementById('selectedVariantId').value = matchVariant.id;
+            maxAvailableStock = matchVariant.stock;
+
+            // Đồng bộ giá tiền lên UI
+            currentPriceEl.textContent = formatVND(matchVariant.final_price);
+
+            if (matchVariant.sale_price && matchVariant.price > matchVariant.sale_price) {
+                originalPriceEl.textContent = formatVND(matchVariant.price);
+                originalPriceEl.classList.remove('hidden');
+
+                let saveAmount = matchVariant.price - matchVariant.sale_price;
+                savingBadgeEl.textContent = 'Tiết kiệm ' + formatVND(saveAmount);
+                savingBadgeEl.classList.remove('hidden');
+
+                let pct = Math.round((1 - (matchVariant.sale_price / matchVariant.price)) * 100);
+                if (salePercentBadgeEl) {
+                    salePercentBadgeEl.textContent = '-' + pct + '%';
+                    salePercentBadgeEl.classList.remove('hidden');
+                }
+            } else {
+                originalPriceEl.classList.add('hidden');
+                savingBadgeEl.classList.add('hidden');
+                if (salePercentBadgeEl) salePercentBadgeEl.classList.add('hidden');
+            }
+
+            if (skuEl) skuEl.textContent = 'SKU: ' + matchVariant.sku;
+            if (matchVariant.image_url) document.getElementById('mainImage').src = matchVariant.image_url;
+
+            // Xử lý logic hiển thị số lượng Kho thực tế
+            if (matchVariant.stock > 0) {
+                stockDisplayEl.textContent = `Kho: Còn ${matchVariant.stock} sản phẩm`;
+                stockDisplayEl.className = "text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg ml-2";
+
+                // Mở khóa các nút mua hàng
+                btnAdd.disabled = false; btnAdd.style.opacity = "1"; btnAdd.querySelector('.btn-text').textContent = "Thêm vào giỏ";
+                btnBuy.disabled = false; btnBuy.style.opacity = "1"; btnBuy.querySelector('.btn-text').textContent = "Mua ngay";
+            } else {
+                stockDisplayEl.textContent = "Hết hàng";
+                stockDisplayEl.className = "text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg ml-2";
+
+                // Khóa các nút mua hàng do hết hàng
+                disablePurchaseButtons("Hết hàng");
+            }
+
+            // Nếu số lượng chọn hiện tại lớn hơn kho của biến thể mới chọn, hạ số lượng xuống kịch trần kho
+            if (currentQuantity > maxAvailableStock) {
+                currentQuantity = maxAvailableStock > 0 ? maxAvailableStock : 1;
+                document.getElementById('qtyDisplay').textContent = currentQuantity;
+            }
+
+        } else {
+            // Trường hợp 2: PHIÊN BẢN KHÔNG HỢP LỆ HOẶC KHÔNG TỒN TẠI (Reset UI tránh đơ dữ liệu)
+            document.getElementById('selectedVariantId').value = '';
+            maxAvailableStock = 0;
+            currentQuantity = 1;
+            document.getElementById('qtyDisplay').textContent = "1";
+
+            currentPriceEl.textContent = "Không sẵn có";
+            originalPriceEl.classList.add('hidden');
+            savingBadgeEl.classList.add('hidden');
+            if (salePercentBadgeEl) salePercentBadgeEl.classList.add('hidden');
+            if (skuEl) skuEl.textContent = 'SKU: --';
+
+            stockDisplayEl.textContent = "Không có sẵn combo này";
+            stockDisplayEl.className = "text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg ml-2";
+
+            // Khóa các nút mua hàng
+            disablePurchaseButtons("Không sẵn có");
+        }
+    }
+
+    function disablePurchaseButtons(text) {
+        const btnAdd = document.getElementById('btnAddToCart');
+        const btnBuy = document.getElementById('btnBuyNow');
+
+        btnAdd.disabled = true; btnAdd.style.opacity = "0.5"; btnAdd.querySelector('.btn-text').textContent = text;
+        btnBuy.disabled = true; btnBuy.style.opacity = "0.5"; btnBuy.querySelector('.btn-text').textContent = text;
+    }
+
+    function handleCartAction(actionType) {
+        const variantId = document.getElementById('selectedVariantId').value;
+        if (!variantId) {
+            alert('Vui lòng chọn đầy đủ các tùy chọn phiên bản hợp lệ trước!');
+            return;
+        }
+
+        fetch("{{ route('client.cart.add') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            body: JSON.stringify({
+                variant_id: variantId,
+                quantity: currentQuantity
+            })
+        })
+        .then(response => {
+            if (!response.ok) return response.json().then(err => { throw err; });
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (actionType === 'add') {
+                    alert(data.message || 'Đã thêm sản phẩm vào giỏ thành công!');
+                    const cartBadge = document.getElementById('cart-count-badge');
+                    if (cartBadge && data.cart_count !== undefined) cartBadge.textContent = data.cart_count;
+                } else if (actionType === 'buy') {
+                    window.location.href = "{{ route('client.orders.checkout') }}";
+                }
+            }
+        })
+        .catch(error => {
+            alert(error.message || 'Lỗi thêm sản phẩm, vui lòng tải lại trang.');
+        });
+    }
+
+    function switchTab(element, tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+        element.classList.add('active');
+        document.getElementById(tabId).classList.remove('hidden');
+    }
+
+    // Tự động kích hoạt quét dữ liệu một lần đầu tiên ngay khi tải xong trang để cập nhật kho của biến thể mặc định
+    window.addEventListener('DOMContentLoaded', () => {
+        syncVariantDetails();
     });
-}
-
-function updateVariantInfo() {
-    const variant = findSelectedVariant();
-    if (!variant) return;
-
-    const currentPrice = variant.final_price;
-    const originalPrice = variant.price;
-    const hasSale = variant.sale_price !== null && Number(variant.sale_price) < Number(variant.price);
-    const savingAmount = Math.max(0, originalPrice - currentPrice);
-    const discountPercent = hasSale ? Math.round((1 - currentPrice / originalPrice) * 100) : 0;
-
-    document.getElementById('variantCurrentPrice').textContent = formatCurrency(currentPrice);
-    document.getElementById('variantOriginalPrice').textContent = formatCurrency(originalPrice);
-    document.getElementById('variantSavingBadge').textContent = 'Tiết kiệm ' + formatCurrency(savingAmount);
-    setHidden(document.getElementById('variantOriginalPrice'), !hasSale);
-    setHidden(document.getElementById('variantSavingBadge'), !hasSale);
-
-    const salePercentBadge = document.getElementById('salePercentBadge');
-    if (salePercentBadge) {
-        salePercentBadge.textContent = '-' + discountPercent + '%';
-        setHidden(salePercentBadge, !hasSale);
-    }
-
-    const sku = document.getElementById('variantSku');
-    if (sku) {
-        sku.textContent = 'SKU: ' + variant.sku;
-    }
-
-    if (variant.image_url) {
-        document.getElementById('mainImage').src = variant.image_url;
-    }
-}
-
-// Switch main image
-function switchImage(thumb, src) {
-    document.getElementById('mainImage').src = src;
-    document.querySelectorAll('.thumb-item').forEach(t => t.classList.remove('active'));
-    thumb.classList.add('active');
-}
-
-// Qty
-let qty = 1;
-function changeQty(delta) {
-    qty = Math.max(1, qty + delta);
-    document.getElementById('qtyDisplay').textContent = qty;
-}
-
-// Variant select
-function selectVariant(btn) {
-    btn.closest('.info-card').querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    updateVariantInfo();
-}
-
-function selectColor(dot) {
-    const card = dot.closest('.info-card');
-    const dots = card.querySelectorAll('.color-dot');
-    dots.forEach((d, i) => {
-        d.classList.remove('active');
-    });
-    dot.classList.add('active');
-    const label = card.querySelector('.color-label');
-    if (label) {
-        label.textContent = dot.dataset.name ?? '';
-    }
-    updateVariantInfo();
-}
-
-// Tabs
-function switchTab(btn, targetId) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-    btn.classList.add('active');
-    document.getElementById(targetId).classList.remove('hidden');
-}
 </script>
 @endpush

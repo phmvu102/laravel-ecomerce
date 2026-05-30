@@ -1,9 +1,24 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| CLIENT CONTROLLERS
+|--------------------------------------------------------------------------
+*/
+
 use App\Http\Controllers\Client\ProductController as ClientProductController;
 use App\Http\Controllers\Client\CartController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Client\OrderController;
+
+/*
+|--------------------------------------------------------------------------
+| AUTH CONTROLLERS
+|--------------------------------------------------------------------------
+*/
+
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,12 +33,21 @@ use App\Http\Controllers\Admin\AttributeController;
 
 /*
 |--------------------------------------------------------------------------
-| CLIENT ROUTES
+| PUBLIC ROUTES
 |--------------------------------------------------------------------------
 */
 
 Route::get('/', [ClientProductController::class, 'index'])
     ->name('home');
+
+Route::view('/about', 'client.about')
+    ->name('client.about');
+
+/*
+|--------------------------------------------------------------------------
+| SHOP
+|--------------------------------------------------------------------------
+*/
 
 Route::prefix('shop')
     ->name('client.')
@@ -38,11 +62,17 @@ Route::prefix('shop')
 
 /*
 |--------------------------------------------------------------------------
-| AUTH USER ROUTES
+| AUTH REQUIRED
 |--------------------------------------------------------------------------
 */
 
 Route::middleware('auth')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | PROFILE
+    |--------------------------------------------------------------------------
+    */
 
     Route::prefix('profile')
         ->name('profile.')
@@ -57,6 +87,12 @@ Route::middleware('auth')->group(function () {
             Route::delete('/', [ProfileController::class, 'destroy'])
                 ->name('destroy');
         });
+
+    /*
+    |--------------------------------------------------------------------------
+    | CART
+    |--------------------------------------------------------------------------
+    */
 
     Route::prefix('cart')
         ->name('client.cart.')
@@ -78,14 +114,46 @@ Route::middleware('auth')->group(function () {
                 ->name('clear');
         });
 
-    Route::get('/checkout', [CartController::class, 'checkout'])
-        ->name('client.checkout');
+    /*
+    |--------------------------------------------------------------------------
+    | ORDERS & CHECKOUT
+    |--------------------------------------------------------------------------
+    */
 
-    Route::post('/checkout', [CartController::class, 'placeOrder'])
-        ->name('client.checkout.place');
+    Route::prefix('orders')
+        ->name('client.orders.')
+        ->group(function () {
 
-    Route::get('/order-success/{order}', [CartController::class, 'orderSuccess'])
-        ->name('client.order.success');
+            /*
+            |--------------------------------------------------------------------------
+            | Checkout
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/checkout', [OrderController::class, 'checkout'])
+                ->name('checkout');
+
+            Route::post('/checkout', [OrderController::class, 'placeOrder'])
+                ->name('place');
+
+            Route::get('/success/{order}', [OrderController::class, 'success'])
+                ->name('success');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Orders
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get('/', [OrderController::class, 'index'])
+                ->name('index');
+
+            Route::get('/{order}', [OrderController::class, 'show'])
+                ->name('show');
+
+            Route::post('/{order}/cancel', [OrderController::class, 'cancel'])
+                ->name('cancel');
+        });
 });
 
 /*
@@ -98,12 +166,25 @@ Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+
         Route::get('/dashboard', function () {
             return view('admin.dashboard');
         })->name('dashboard');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Categories
+        |--------------------------------------------------------------------------
+        */
+
         Route::resource('categories', CategoryController::class)
             ->except(['show', 'create']);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Attributes
+        |--------------------------------------------------------------------------
+        */
 
         Route::resource('attributes', AttributeController::class)
             ->except(['show', 'create']);
@@ -118,12 +199,30 @@ Route::middleware(['auth', 'role:admin'])
             [AttributeController::class, 'destroyValue']
         )->name('attributes.destroyValue');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Products
+        |--------------------------------------------------------------------------
+        */
+
         Route::resource('products', AdminProductController::class)
             ->except(['show']);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Brands
+        |--------------------------------------------------------------------------
+        */
 
         Route::resource('brands', BrandController::class)
             ->except(['show', 'create', 'edit']);
     });
+
+/*
+|--------------------------------------------------------------------------
+| VENDOR ROUTES
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware(['auth', 'role:vendor,admin'])
     ->prefix('vendor')
@@ -135,35 +234,15 @@ Route::middleware(['auth', 'role:vendor,admin'])
         })->name('dashboard');
     });
 
+/*
+|--------------------------------------------------------------------------
+| DEFAULT DASHBOARD
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/dashboard', function () {
     return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
-// Client routes
-Route::get('/', [ClientProductController::class, 'index'])->name('home');
-Route::view('/gioi-thieu', 'client.about')->name('client.about');
-Route::get('/shop/{category_slug?}', [ClientProductController::class, 'shop'])->name('client.shop');
-Route::get('/product/{slug}', [ClientProductController::class, 'show'])->name('client.product.show');
-
-// Auth required
-Route::middleware('auth')->group(function () {
-    // Breeze profile
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/profile/orders', [ProfileController::class, 'orders'])->name('client.profile.orders');
-    Route::get('/profile/orders/{order}', [ProfileController::class, 'orderDetail'])->name('client.profile.orders.show');
-
-    // Cart
-    Route::get('/cart', [CartController::class, 'index'])->name('client.cart.index');
-    Route::post('/cart/add', [CartController::class, 'add'])->name('client.cart.add');
-    Route::patch('/cart/update', [CartController::class, 'update'])->name('client.cart.update');
-    Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('client.cart.remove');
-    Route::delete('/cart/clear', [CartController::class, 'clear'])->name('client.cart.clear');
-
-    // Checkout
-    Route::get('/checkout', [CartController::class, 'checkout'])->name('client.checkout');
-    Route::post('/checkout', [CartController::class, 'placeOrder'])->name('client.checkout.place');
-    Route::get('/order-success/{order}', [CartController::class, 'orderSuccess'])->name('client.order.success');
-});
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
