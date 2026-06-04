@@ -5,7 +5,7 @@
 @section('content')
 <div class="max-w-6xl mx-auto" x-data="productForm()">
 
-    <form action="{{ route('admin.products.store') }}" method="POST" class="space-y-6">
+    <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
 
         @if($errors->any())
@@ -19,8 +19,10 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
+            {{-- CỘT TRÁI (THÔNG TIN CHÍNH) --}}
             <div class="lg:col-span-2 space-y-6">
 
+                {{-- Khối 1: Thông tin chung --}}
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                     <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
                         <i data-lucide="package" class="w-5 h-5 text-indigo-600"></i> Thông tin chung
@@ -42,6 +44,64 @@
                     </div>
                 </div>
 
+                {{-- Khối 2: QUẢN LÝ HÌNH ẢNH SẢN PHẨM --}}
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <i data-lucide="image" class="w-5 h-5 text-indigo-600"></i> Hình ảnh sản phẩm
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {{-- A. Ảnh đại diện chính (Thumbnail) --}}
+                        <div class="md:col-span-1 border-r border-slate-100 pr-0 md:pr-4">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Ảnh đại diện <span class="text-red-500">*</span></label>
+
+                            <div class="relative group border-2 border-dashed border-slate-200 rounded-xl p-2 flex flex-col items-center justify-center min-h-[160px] bg-slate-50 hover:bg-slate-100/50 transition">
+                                <template x-if="!thumbnailUrl">
+                                    <div class="text-center space-y-1 p-4 cursor-pointer" @click="$refs.thumbnailInput.click()">
+                                        <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400 mx-auto"></i>
+                                        <p class="text-xs font-medium text-slate-600">Chọn ảnh chính</p>
+                                        <p class="text-[10px] text-slate-400">JPEG, PNG, WEBP (Max 2MB)</p>
+                                    </div>
+                                </template>
+
+                                <template x-if="thumbnailUrl">
+                                    <div class="relative w-full h-full min-h-[140px] flex items-center justify-center">
+                                        <img :src="thumbnailUrl" class="max-h-[140px] rounded-lg object-contain shadow-2xs">
+                                        <button type="button" @click="removeThumbnail()" class="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow-md hover:bg-rose-600 transition">
+                                            <i data-lucide="x" class="w-3 h-3"></i>
+                                        </button>
+                                    </div>
+                                </template>
+
+                                <input type="file" x-ref="thumbnailInput" name="thumbnail" accept="image/*" class="hidden" @change="previewThumbnail">
+                            </div>
+                        </div>
+
+                        {{-- B. Thư viện ảnh chi tiết (Gallery) --}}
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Thư viện ảnh phụ (Gallery)</label>
+
+                            <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                <div @click="$refs.galleryInput.click()" class="border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 transition cursor-pointer min-h-[90px]">
+                                    <i data-lucide="plus" class="w-5 h-5 text-slate-400 mb-1"></i>
+                                    <span class="text-[11px] font-medium text-slate-500">Thêm ảnh</span>
+                                    <input type="file" x-ref="galleryInput" name="images[]" accept="image/*" multiple class="hidden" @change="previewGallery">
+                                </div>
+
+                                <template x-for="(img, index) in galleryUrls" :key="index">
+                                    <div class="relative border border-slate-200 rounded-xl p-1 bg-white flex items-center justify-center aspect-square group">
+                                        <img :src="img" class="max-h-full max-w-full rounded-lg object-contain">
+                                        <button type="button" @click="removeGalleryItem(index)" class="absolute -top-1.5 -right-1.5 bg-slate-800/80 text-white rounded-full p-1 shadow-xs opacity-90 hover:bg-rose-600 transition">
+                                            <i data-lucide="x" class="w-2.5 h-2.5"></i>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Khối 3: Thông số kỹ thuật --}}
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                     <h3 class="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
                         <i data-lucide="cpu" class="w-5 h-5 text-indigo-600"></i> Thông số kỹ thuật (Specifications)
@@ -63,6 +123,7 @@
                     </button>
                 </div>
 
+                {{-- Khối 4: Phân loại & Cấu hình giá --}}
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -99,31 +160,70 @@
 
                         <div class="space-y-3 overflow-x-auto">
                             <template x-for="(variant, vIdx) in generatedVariants" :key="vIdx">
-                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3 min-w-[500px]">
+                                <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3 min-w-[650px]">
                                     <div class="flex justify-between items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
                                         <span class="text-xs font-bold text-indigo-700" x-text="variant.label || 'Mặc định'"></span>
                                         <input type="hidden" :name="`variants[${vIdx}][attribute_values]`" :value="variant.ids.join(',')">
                                     </div>
 
-                                    <div class="grid grid-cols-3 gap-3">
+                                    {{-- Bố cục Grid nâng lên thành 5 cột để chèn Số lượng kho --}}
+                                    <div class="grid grid-cols-5 gap-3 items-end">
+                                        {{-- Ô 1: Ảnh biến thể --}}
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Ảnh biến thể</label>
+                                            <div class="relative border border-slate-200 rounded-lg p-1 bg-slate-50 flex items-center justify-center h-9 cursor-pointer hover:bg-slate-100 transition"
+                                                 @click="$el.querySelector('.variant-file-input').click()">
+
+                                                <template x-if="!variant.imagePreview">
+                                                    <div class="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+                                                        <i data-lucide="image" class="w-3.5 h-3.5"></i> Chọn ảnh
+                                                    </div>
+                                                </template>
+
+                                                <template x-if="variant.imagePreview">
+                                                    <div class="w-full h-full flex items-center justify-between px-1">
+                                                        <img :src="variant.imagePreview" class="h-full w-7 object-contain rounded">
+                                                        <button type="button" @click.stop="variant.imagePreview = null; $el.closest('.relative').querySelector('.variant-file-input').value = ''" class="text-rose-500 hover:text-rose-700">
+                                                            <i data-lucide="x" class="w-3 h-3"></i>
+                                                        </button>
+                                                    </div>
+                                                </template>
+
+                                                <input type="file" :name="`variants[${vIdx}][image]`" accept="image/*" class="hidden variant-file-input"
+                                                       @change="let file = $event.target.files[0]; if(file) variant.imagePreview = URL.createObjectURL(file)">
+                                            </div>
+                                        </div>
+
+                                        {{-- Ô 2: Mã SKU --}}
                                         <div>
                                             <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Mã SKU <span class="text-red-500">*</span></label>
                                             <input type="text" :name="`variants[${vIdx}][sku]`" x-model="variant.sku" required class="w-full rounded-lg border-slate-200 text-xs py-1">
                                         </div>
+
+                                        {{-- Ô 3: Giá bán lẻ --}}
                                         <div>
-                                            <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Giá bán lẻ (đ) <span class="text-red-500">*</span></label>
+                                            <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Giá bán (đ) <span class="text-red-500">*</span></label>
                                             <input type="number" :name="`variants[${vIdx}][price]`" x-model="variant.price" required class="w-full rounded-lg border-slate-200 text-xs py-1">
                                         </div>
+
+                                        {{-- Ô 4: Giá Sale --}}
                                         <div>
-                                            <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Giá Sale (đ - Tùy chọn)</label>
+                                            <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Giá Sale (đ)</label>
                                             <input type="number" :name="`variants[${vIdx}][sale_price]`" x-model="variant.sale_price" class="w-full rounded-lg border-slate-200 text-xs py-1">
+                                        </div>
+
+                                        {{-- Ô 5: MỚI BỔ SUNG - Số lượng kho hàng --}}
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-500 mb-0.5">Số lượng kho <span class="text-red-500">*</span></label>
+                                            <input type="number" :name="`variants[${vIdx}][stock]`" x-model="variant.stock" min="0" required class="w-full rounded-lg border-indigo-200 focus:border-indigo-500 focus:ring-indigo-500 text-xs py-1 font-semibold text-slate-800 bg-indigo-50/30">
                                         </div>
                                     </div>
 
+                                    {{-- Phần kích thước vận chuyển --}}
                                     <div class="grid grid-cols-4 gap-2 border-t border-dashed border-slate-100 pt-2 text-[11px]">
                                         <div>
                                             <label class="block text-slate-400 mb-0.5">Cân nặng (g)</label>
-                                            <input type="number" :name="`variants[${vIdx}][weight]`" x-model="variant.weight" placeholder="gram" class="w-full rounded-lg border-slate-200 text-xs py-1">
+                                            <input type="number" :name="`variants[${vIdx}][weight]`" x-model="variant.weight" class="w-full rounded-lg border-slate-200 text-xs py-1">
                                         </div>
                                         <div>
                                             <label class="block text-slate-400 mb-0.5">Dài (cm)</label>
@@ -146,8 +246,8 @@
 
             </div>
 
+            {{-- CỘT PHẢI --}}
             <div class="space-y-6">
-
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
                     <h3 class="text-sm font-bold text-slate-800">Trạng thái đăng tải</h3>
                     <div>
@@ -193,8 +293,8 @@
                         </select>
                     </div>
                 </div>
-
             </div>
+
         </div>
     </form>
 </div>
@@ -202,27 +302,46 @@
 <script>
 function productForm() {
     return {
-        productType: 'single', // Mặc định là sản phẩm đơn giản
-        specs: [{ key: '', value: '' }], // Cấu hình thông số kỹ thuật ban đầu
-        generatedVariants: [], // Chứa danh sách các dòng biến thể được sinh ra tự động
+        productType: 'single',
+        specs: [{ key: '', value: '' }],
+        generatedVariants: [],
+        thumbnailUrl: null,
+        galleryUrls: [],
 
         init() {
-            // Lần đầu chạy, tự tạo sẵn 1 dòng biến thể mặc định cho sản phẩm đơn giản
             this.updateCombinations();
-            // Theo dõi sự thay đổi của loại sản phẩm để tính toán lại tổ hợp giá trị
             this.$watch('productType', value => this.updateCombinations());
+        },
+
+        previewThumbnail(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.thumbnailUrl = URL.createObjectURL(file);
+            }
+        },
+        removeThumbnail() {
+            this.thumbnailUrl = null;
+            this.$refs.thumbnailInput.value = '';
+        },
+
+        previewGallery(event) {
+            const files = Array.from(event.target.files);
+            files.forEach(file => {
+                this.galleryUrls.push(URL.createObjectURL(file));
+            });
+        },
+        removeGalleryItem(index) {
+            this.galleryUrls.splice(index, 1);
         },
 
         addSpec() {
             this.specs.push({ key: '', value: '' });
         },
-
         removeSpec(index) {
             this.specs.splice(index, 1);
         },
 
         updateCombinations() {
-            // NẾU LÀ SẢN PHẨM ĐƠN GIẢN
             if (this.productType === 'single') {
                 this.generatedVariants = [{
                     label: 'Phiên bản mặc định',
@@ -230,6 +349,8 @@ function productForm() {
                     sku: 'SKU-' + Math.floor(Math.random() * 100000),
                     price: 0,
                     sale_price: '',
+                    stock: 0, // Bổ sung mặc định sản phẩm đơn giản
+                    imagePreview: null,
                     weight: 0,
                     length: 0,
                     width: 0,
@@ -238,7 +359,6 @@ function productForm() {
                 return;
             }
 
-            // NẾU LÀ SẢN PHẨM BIẾN THỂ: Gom nhóm dữ liệu các ô checkbox đã tích chọn
             let checkboxes = document.querySelectorAll('.attribute-checkbox:checked');
             let groups = {};
 
@@ -258,20 +378,28 @@ function productForm() {
                 return;
             }
 
-            // Thuật toán tích Descartes tính toán tất cả tổ hợp có thể xảy ra
             let combinations = cartesianProduct(groupArrays);
+            let oldVariants = this.generatedVariants;
 
-            // Đổ danh sách tổ hợp tính được ra màn hình
             this.generatedVariants = combinations.map(combo => {
                 let label = combo.map(c => c.name).join(' / ');
                 let ids = combo.map(c => c.id);
-                // Đối với sản phẩm Biến thể (Variable) nằm ở đoạn map ma trận Descartes
+                let currentComboIdStr = ids.join(',');
+
+                let existing = oldVariants.find(v => v.ids.join(',') === currentComboIdStr);
+
+                if (existing) {
+                    return existing; // Giữ lại số lượng đã nhập nếu biến thể đã có sẵn trước đó
+                }
+
                 return {
                     label: label,
                     ids: ids,
                     sku: 'SKU-' + ids.join('-') + '-' + Math.floor(Math.random() * 1000),
                     price: 0,
                     sale_price: '',
+                    stock: 0, // Khởi tạo số lượng mặc định bằng 0 cho biến thể mới
+                    imagePreview: null,
                     weight: 0,
                     length: 0,
                     width: 0,
@@ -282,7 +410,6 @@ function productForm() {
     }
 }
 
-// Hàm hỗ trợ tính toán ma trận Tích Descartes (Cartesian Product)
 function cartesianProduct(arrays) {
     return arrays.reduce((a, b) => {
         let ret = [];

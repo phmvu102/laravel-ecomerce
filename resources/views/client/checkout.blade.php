@@ -1,92 +1,66 @@
 @extends('layouts.app')
 
-@section('title', 'Thanh toán - ShopNova')
+@section('title', 'Checkout')
 
 @section('content')
-<div class="min-h-screen bg-slate-50 py-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-3xl font-black text-slate-900 mb-8">Thanh toán</h1>
+<section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <h1 class="text-2xl font-black text-slate-900 mb-8">Checkout</h1>
 
-        <form action="{{ route('client.checkout.place') }}" method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <form action="{{ route('client.checkout.place') }}" method="POST" class="rounded-xl border border-slate-200 bg-white p-5">
             @csrf
 
-            <div class="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 sm:p-6">
-                <h2 class="text-lg font-black text-slate-900 mb-5">Thông tin nhận hàng</h2>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Họ tên</label>
-                        <input type="text" name="shipping_name" value="{{ old('shipping_name', auth()->user()->name) }}"
-                               class="w-full rounded-xl border-slate-200 text-sm focus:border-sky-400 focus:ring-sky-400">
-                        @error('shipping_name')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Số điện thoại</label>
-                        <input type="text" name="shipping_phone" value="{{ old('shipping_phone') }}"
-                               class="w-full rounded-xl border-slate-200 text-sm focus:border-sky-400 focus:ring-sky-400">
-                        @error('shipping_phone')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
-                    </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="shipping_name" class="block text-sm font-bold text-slate-700 mb-1">Full name</label>
+                    <input id="shipping_name" name="shipping_name" value="{{ old('shipping_name', auth()->user()->name) }}" required class="w-full rounded-lg border-slate-300 text-sm">
+                    @error('shipping_name') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="mt-4">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Địa chỉ giao hàng</label>
-                    <textarea name="shipping_address" rows="4"
-                              class="w-full rounded-xl border-slate-200 text-sm focus:border-sky-400 focus:ring-sky-400">{{ old('shipping_address') }}</textarea>
-                    @error('shipping_address')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
-                </div>
-
-                <div class="mt-4">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Ghi chú</label>
-                    <textarea name="customer_note" rows="3"
-                              class="w-full rounded-xl border-slate-200 text-sm focus:border-sky-400 focus:ring-sky-400">{{ old('customer_note') }}</textarea>
-                    @error('customer_note')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
-                </div>
-
-                <div class="mt-5">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Phương thức thanh toán</label>
-                    <label class="flex items-center gap-3 rounded-xl border border-slate-200 p-4 cursor-pointer">
-                        <input type="radio" name="payment_method" value="COD" checked class="text-sky-500 focus:ring-sky-400">
-                        <span class="text-sm font-bold text-slate-700">Thanh toán khi nhận hàng (COD)</span>
-                    </label>
-                    @error('payment_method')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+                <div>
+                    <label for="shipping_phone" class="block text-sm font-bold text-slate-700 mb-1">Phone</label>
+                    <input id="shipping_phone" name="shipping_phone" value="{{ old('shipping_phone', auth()->user()->phone) }}" required class="w-full rounded-lg border-slate-300 text-sm">
+                    @error('shipping_phone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
             </div>
 
-            <aside class="bg-white border border-slate-200 rounded-2xl p-5 h-fit sticky top-24">
-                <h2 class="text-lg font-black text-slate-900 mb-5">Đơn hàng</h2>
-                <div class="space-y-4">
-                    @foreach($cartItems as $item)
-                        <div class="flex justify-between gap-3 text-sm">
-                            <div>
-                                <p class="font-bold text-slate-800">{{ $item['variant']->product->name }}</p>
-                                <p class="text-xs text-slate-400">x{{ $item['quantity'] }}</p>
-                            </div>
-                            <p class="font-bold text-slate-900 whitespace-nowrap">{{ number_format($item['total'], 0, ',', '.') }}đ</p>
-                        </div>
-                    @endforeach
-                </div>
+            <div class="mt-4">
+                <label for="shipping_address" class="block text-sm font-bold text-slate-700 mb-1">Shipping address</label>
+                <textarea id="shipping_address" name="shipping_address" rows="4" required class="w-full rounded-lg border-slate-300 text-sm">{{ old('shipping_address') }}</textarea>
+                @error('shipping_address') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            </div>
 
-                <div class="mt-5 border-t border-slate-100 pt-4 space-y-3 text-sm">
-                    <div class="flex justify-between text-slate-500">
-                        <span>Tạm tính</span>
-                        <span class="font-bold text-slate-800">{{ number_format($subtotal, 0, ',', '.') }}đ</span>
-                    </div>
-                    <div class="flex justify-between text-slate-500">
-                        <span>Phí vận chuyển</span>
-                        <span class="font-bold text-slate-800">{{ $shippingFee > 0 ? number_format($shippingFee, 0, ',', '.').'đ' : 'Miễn phí' }}</span>
-                    </div>
-                    <div class="flex justify-between border-t border-slate-100 pt-3">
-                        <span class="font-black text-slate-900">Tổng cộng</span>
-                        <span class="text-xl font-black text-slate-900">{{ number_format($total, 0, ',', '.') }}đ</span>
-                    </div>
-                </div>
+            <div class="mt-4">
+                <label for="customer_note" class="block text-sm font-bold text-slate-700 mb-1">Note</label>
+                <textarea id="customer_note" name="customer_note" rows="3" class="w-full rounded-lg border-slate-300 text-sm">{{ old('customer_note') }}</textarea>
+                @error('customer_note') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+            </div>
 
-                <button type="submit" class="mt-5 w-full rounded-xl bg-sky-500 px-5 py-3 text-sm font-bold text-white hover:bg-sky-600">
-                    Đặt hàng
-                </button>
-            </aside>
+            <input type="hidden" name="payment_method" value="COD">
+
+            <button type="submit" class="mt-6 rounded-lg bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">Place order</button>
         </form>
+
+        <aside class="h-fit rounded-xl border border-slate-200 bg-white p-5">
+            <h2 class="font-black text-slate-900 mb-4">Order summary</h2>
+
+            <div class="space-y-4">
+                @foreach($cart as $item)
+                    <div class="flex justify-between gap-4 text-sm">
+                        <div>
+                            <p class="font-bold text-slate-800">{{ $item['name'] }}</p>
+                            <p class="text-xs text-slate-500">Qty: {{ $item['quantity'] }}</p>
+                        </div>
+                        <p class="font-bold text-slate-900">{{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }} VND</p>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-5 border-t border-slate-100 pt-4 flex justify-between">
+                <span class="font-bold text-slate-600">Total</span>
+                <span class="text-lg font-black text-slate-900">{{ number_format($subtotal, 0, ',', '.') }} VND</span>
+            </div>
+        </aside>
     </div>
-</div>
+</section>
 @endsection
