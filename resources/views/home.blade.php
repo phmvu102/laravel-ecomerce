@@ -6,7 +6,7 @@
 <style>
     /* Hệ thống nền & Hiệu ứng chuyển động mượt mà */
     .premium-bg {
-        background: 
+        background:
             radial-gradient(circle at 5% 5%, rgba(14, 165, 233, 0.03), transparent 25%),
             radial-gradient(circle at 95% 95%, rgba(249, 115, 22, 0.03), transparent 30%),
             #f8fafc;
@@ -83,7 +83,7 @@
 @section('content')
 @php
     $saleProducts = ($flashSaleProducts ?? collect())->count() ? $flashSaleProducts : ($newProducts ?? collect());
-    
+
     $categoryColors = [
         'bg-blue-50 text-blue-600 ring-blue-100',
         'bg-orange-50 text-orange-600 ring-orange-100',
@@ -110,7 +110,7 @@
 @endphp
 
 <div class="premium-bg pb-16">
-    
+
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div class="lg:col-span-2 hero-carousel rounded-2xl overflow-hidden shadow-lg group">
@@ -236,7 +236,7 @@
                 @forelse($saleProducts->take(5) as $product)
                     <div class="bg-white rounded-xl overflow-hidden p-3 shadow-md group relative flex flex-col justify-between">
                         @include('components.product-card', [
-                            'product' => $product, 
+                            'product' => $product,
                             'badge' => 'sale'
                         ])
                     </div>
@@ -284,7 +284,7 @@
 <script>
 // LOGIC CAROUSEL BANNER CHÍNH KHÔNG ĐỔI
 let currentSlide = 0;
-const totalSlides = {{ count($slides) }}; 
+const totalSlides = {{ count($slides) }};
 let slideInterval = setInterval(nextSlide, 5000);
 
 function updateSliderViews() {
@@ -313,7 +313,7 @@ function resetInterval() {
 function updateCountdown() {
     const now = new Date();
     const midnight = new Date();
-    midnight.setHours(24, 0, 0, 0); 
+    midnight.setHours(24, 0, 0, 0);
     const diff = Math.max(midnight - now, 0);
 
     const hours = Math.floor(diff / (1000 * 60 * 60));

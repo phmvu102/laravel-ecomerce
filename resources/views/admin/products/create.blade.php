@@ -267,6 +267,8 @@
                         <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2.5 rounded-xl hover:bg-indigo-700 transition shadow-sm flex items-center justify-center gap-2 text-sm">
                             <i data-lucide="save" class="w-4 h-4"></i> Lưu sản phẩm vào hệ thống
                         </button>
+
+                        <a href="{{ route('admin.products.index') }}">Quay lại</a>
                     </div>
                 </div>
 
