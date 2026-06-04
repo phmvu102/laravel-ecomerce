@@ -76,19 +76,30 @@
                             </strong>
                         </span>
 
+                        @php
+                            $statusText = match($order->status) {
+                                'pending' => 'Chờ xử lý',
+                                'processing' => 'Đang xử lý',
+                                'shipping' => 'Đang giao',
+                                'completed' => 'Hoàn thành',
+                                'cancelled' => 'Đã huỷ',
+                                default => ucfirst($order->status)
+                            };
+                        @endphp
+
                         <span class="status {{ $order->status }}">
-                            {{ ucfirst($order->status) }}
+                            {{ $statusText }}
                         </span>
                     </div>
                 </div>
 
                 <div class="flex gap-3">
-                    <a href="{{ route('profile.edit') }}"
+                    <a href="{{ route('client.orders.index') }}"
                        class="px-5 py-3 rounded-2xl bg-white/70 hover:bg-white text-slate-700 font-semibold border border-white/50 transition">
-                        Quay lại
+                        Tất cả đơn hàng
                     </a>
 
-                    @if(in_array($order->status, ['pending', 'processing']))
+                    @if(in_array($order->status, ['pending', 'confirmed', 'processing']))
                     <form
                         action="{{ route('client.orders.cancel', $order->id) }}"
                         method="POST">

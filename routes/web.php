@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Client\ProductController as ClientProductController;
 use App\Http\Controllers\Client\CartController;
-use App\Http\Controllers\Client\OrderController;
+use App\Http\Controllers\Client\OrderController as ClientOrderController;
+use App\Http\Controllers\Client\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +31,10 @@ use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\AttributeController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
 
 /*
 |--------------------------------------------------------------------------
@@ -130,13 +135,13 @@ Route::middleware('auth')->group(function () {
             |--------------------------------------------------------------------------
             */
 
-            Route::get('/checkout', [OrderController::class, 'checkout'])
+            Route::get('/checkout', [ClientOrderController::class, 'checkout'])
                 ->name('checkout');
 
-            Route::post('/checkout', [OrderController::class, 'placeOrder'])
+            Route::post('/checkout', [ClientOrderController::class, 'placeOrder'])
                 ->name('place');
 
-            Route::get('/success/{order}', [OrderController::class, 'success'])
+            Route::get('/success/{order}', [ClientOrderController::class, 'success'])
                 ->name('success');
 
             /*
@@ -145,16 +150,47 @@ Route::middleware('auth')->group(function () {
             |--------------------------------------------------------------------------
             */
 
-            Route::get('/', [OrderController::class, 'index'])
+            Route::get('/', [ClientOrderController::class, 'index'])
                 ->name('index');
 
-            Route::get('/{order}', [OrderController::class, 'show'])
+            Route::get('/{order}', [ClientOrderController::class, 'show'])
                 ->name('show');
 
-            Route::post('/{order}/cancel', [OrderController::class, 'cancel'])
+            Route::patch('/{order}/cancel', [ClientOrderController::class, 'cancel'])
                 ->name('cancel');
         });
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT WITH VNPAY
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('payment')
+        ->middleware('auth')
+        ->group(function () {
+
+            Route::get(
+                '/vnpay/{order}',
+                [PaymentController::class, 'createVnpayPayment']
+            )->name('client.payment.vnpay');
+
+            Route::get(
+                '/vnpay-return',
+                [PaymentController::class, 'vnpayReturn']
+            )->name('client.payment.vnpay.return');
+
+            Route::get(
+                '/momo/{order}',
+                [PaymentController::class, 'createMomoPayment']
+            )->name('client.payment.momo');
+        });
 });
+
+Route::get(
+    '/payment/vnpay-ipn',
+    [PaymentController::class, 'vnpayIpn']
+)->name('client.payment.vnpay.ipn');
 
 /*
 |--------------------------------------------------------------------------
@@ -216,7 +252,34 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::resource('brands', BrandController::class)
             ->except(['show', 'create', 'edit']);
-    });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Manager USERS
+        |--------------------------------------------------------------------------
+        */
+
+        Route::resource('users', UserController::class);
+
+        Route::get(
+            'users-datatable',
+            [UserController::class, 'datatable']
+        )->name('users.datatable');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Manager ORDERS
+        |--------------------------------------------------------------------------
+        */
+
+        Route::resource('orders', AdminOrderController::class)
+            ->only(['index', 'show']);
+
+        Route::put(
+            'orders/{order}/status',
+            [AdminOrderController::class, 'updateStatus']
+        )->name('orders.updateStatus');
+});
 
 /*
 |--------------------------------------------------------------------------

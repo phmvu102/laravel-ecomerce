@@ -29,7 +29,6 @@
     </style>
 
     <div class="min-h-screen overflow-hidden bg-[#020617] relative flex items-center justify-center">
-
         <!-- Background -->
         <div
             class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.3),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.2),transparent_45%),linear-gradient(to_bottom_right,#020617,#071226,#0f172a)]">
@@ -42,12 +41,9 @@
         <div
             class="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[140px] animate-pulse"
             style="animation-duration: 10s;"></div>
-
         <div class="relative z-10 w-full min-h-screen grid lg:grid-cols-12 max-w-[1600px] mx-auto">
-
             <!-- LEFT CONTENT -->
             <div class="hidden lg:flex lg:col-span-7 relative items-center px-16 xl:px-24 overflow-hidden">
-
                 <div
                     class="absolute inset-0 opacity-10 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:50px_50px]">
                 </div>
@@ -55,16 +51,13 @@
                 <div
                     class="absolute left-10 top-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-cyan-500/10 rounded-full animate-spin"
                     style="animation-duration: 40s;"></div>
-
                 <div
                     class="absolute left-24 top-1/2 -translate-y-1/2 w-[450px] h-[450px] border border-blue-500/10 rounded-full animate-spin"
                     style="animation-duration: 25s; animation-direction: reverse;"></div>
 
                 <div class="relative z-10 max-w-xl">
-
                     <div
                         class="inline-flex items-center gap-3.5 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-xl mb-8 transform hover:scale-105 transition duration-300">
-
                         <div
                             class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none"
@@ -75,18 +68,18 @@
                         </div>
 
                         <div>
-                            <h3 class="text-white font-semibold text-sm tracking-wide">Create New Identity</h3>
-                            <p class="text-cyan-200/50 text-xs">Secure onboarding experience</p>
+                            <h3 class="text-white font-semibold text-sm tracking-wide">Tạo danh tính mới</h3>
+                            <p class="text-cyan-200/50 text-xs">Trải nghiệm đăng ký an toàn</p>
                         </div>
                     </div>
 
                     <h1 class="text-5xl xl:text-6xl font-extrabold tracking-tight leading-[1.15] text-white">
-                        Join The
+                        Tham gia
                         <span
                             class="bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-sm">
-                            Liquid Glass
+                            VUCCI
                         </span>
-                        Universe
+                        Shop
                     </h1>
 
                     <p class="mt-6 text-base xl:text-lg leading-relaxed text-slate-400 max-w-md">
@@ -100,15 +93,15 @@
                             class="px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-md shadow-lg">
                             <h2 class="text-2xl font-bold text-white tracking-tight">256-bit</h2>
                             <p class="text-slate-500 text-xs mt-0.5 font-medium uppercase tracking-wider">
-                                Encryption
+                                Mã hóa
                             </p>
                         </div>
 
                         <div
                             class="px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-md shadow-lg">
-                            <h2 class="text-2xl font-bold text-white tracking-tight">AI Secure</h2>
+                            <h2 class="text-2xl font-bold text-white tracking-tight">Bảo mật AI</h2>
                             <p class="text-slate-500 text-xs mt-0.5 font-medium uppercase tracking-wider">
-                                Verification
+                                Xác minh
                             </p>
                         </div>
                     </div>
@@ -117,19 +110,15 @@
 
             <!-- RIGHT FORM -->
             <div class="flex items-center justify-center lg:col-span-5 px-4 sm:px-8 lg:px-12 xl:px-16 py-8 w-full">
-
                 <div
                     class="liquid-glass-card relative w-full max-w-md rounded-[32px] overflow-hidden p-8 sm:p-10 transition-all duration-300 hover:border-white/20">
-
                     <div
                         class="absolute -top-20 -right-20 w-40 h-40 bg-cyan-400/20 rounded-full blur-2xl pointer-events-none">
                     </div>
 
                     <div class="relative z-10">
-
                         <!-- HEADER -->
                         <div class="text-center mb-8">
-
                             <div
                                 class="mx-auto mb-4 w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 ring-4 ring-blue-500/10">
 
@@ -141,25 +130,22 @@
                             </div>
 
                             <h2 class="text-2xl font-bold text-white tracking-wide">
-                                Create Account
+                                Tạo tài khoản mới
                             </h2>
 
                             <p class="text-sm text-slate-400 mt-1.5">
-                                Register to access secure workspace
+                                Hãy đăng ký để bắt đầu hành trình khám phá thế giới Liquid Glass
                             </p>
                         </div>
 
                         <!-- FORM -->
                         <form method="POST" action="{{ route('register') }}" class="space-y-5">
                             @csrf
-
                             <!-- NAME -->
                             <div class="space-y-1.5">
-                                <x-input-label for="name" :value="__('Full Name')"
+                                <x-input-label for="name" :value="__('Họ & tên')"
                                     class="text-slate-300 font-medium text-xs uppercase tracking-wider ml-1" />
-
                                 <div class="relative group">
-
                                     <span
                                         class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors duration-200">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -170,7 +156,7 @@
                                     </span>
 
                                     <input id="name" type="text" name="name" value="{{ old('name') }}"
-                                        required autofocus autocomplete="name" placeholder="John Doe"
+                                        required autofocus autocomplete="name" placeholder="Tên đầy đủ của bạn"
                                         class="liquid-input w-full rounded-2xl pl-11 pr-5 py-3.5 text-sm text-white placeholder:text-slate-600 outline-none focus:ring-0" />
                                 </div>
 
@@ -180,11 +166,9 @@
 
                             <!-- EMAIL -->
                             <div class="space-y-1.5">
-                                <x-input-label for="email" :value="__('Email Address')"
+                                <x-input-label for="email" :value="__('Địa chỉ Email')"
                                     class="text-slate-300 font-medium text-xs uppercase tracking-wider ml-1" />
-
                                 <div class="relative group">
-
                                     <span
                                         class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors duration-200">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -195,7 +179,7 @@
                                     </span>
 
                                     <input id="email" type="email" name="email" value="{{ old('email') }}"
-                                        required autocomplete="username" placeholder="name@company.com"
+                                        required autocomplete="username" placeholder="name@gmail.com"
                                         class="liquid-input w-full rounded-2xl pl-11 pr-5 py-3.5 text-sm text-white placeholder:text-slate-600 outline-none focus:ring-0" />
                                 </div>
 
@@ -207,9 +191,7 @@
                             <div class="space-y-1.5">
                                 <x-input-label for="password" :value="__('Password')"
                                     class="text-slate-300 font-medium text-xs uppercase tracking-wider ml-1" />
-
                                 <div class="relative group">
-
                                     <span
                                         class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors duration-200">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -230,9 +212,8 @@
 
                             <!-- CONFIRM PASSWORD -->
                             <div class="space-y-1.5">
-                                <x-input-label for="password_confirmation" :value="__('Confirm Password')"
+                                <x-input-label for="password_confirmation" :value="__('Xác nhận mật khẩu')"
                                     class="text-slate-300 font-medium text-xs uppercase tracking-wider ml-1" />
-
                                 <div class="relative group">
 
                                     <span
@@ -256,14 +237,13 @@
 
                             <!-- LOGIN LINK -->
                             <div class="flex items-center justify-between text-xs pt-1">
-
                                 <span class="text-slate-500">
-                                    Already have an account?
+                                    Bạn đã có tài khoản?
                                 </span>
 
                                 <a href="{{ route('login') }}"
                                     class="text-cyan-400 hover:text-cyan-300 font-medium transition duration-150">
-                                    Sign In
+                                    Đăng nhập ngay
                                 </a>
                             </div>
 
@@ -283,7 +263,7 @@
 
                                     <span
                                         class="relative z-10 tracking-wider flex items-center justify-center gap-2">
-                                        CREATE ACCOUNT
+                                        Tạo tài khoản
 
                                         <svg xmlns="http://www.w3.org/2000/svg"
                                             class="h-4 w-4 transform group-hover:translate-x-1 transition duration-200"
@@ -295,11 +275,6 @@
                                 </button>
                             </div>
                         </form>
-
-                        <div class="mt-8 text-center text-xs text-slate-600 tracking-wide">
-                            Powered by Liquid Identity System ✨
-                        </div>
-
                     </div>
                 </div>
             </div>

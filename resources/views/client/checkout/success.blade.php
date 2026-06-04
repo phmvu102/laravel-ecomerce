@@ -9,10 +9,8 @@
 <section
     class="relative overflow-hidden min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-100 py-16"
 >
-
     {{-- BACKGROUND --}}
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-
         <div
             class="absolute top-0 left-0 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl"
         ></div>
@@ -20,15 +18,12 @@
         <div
             class="absolute bottom-0 right-0 h-[30rem] w-[30rem] rounded-full bg-blue-500/20 blur-3xl"
         ></div>
-
     </div>
 
     <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-
         <div
             class="rounded-[2.5rem] border border-white/30 bg-white/10 p-10 text-center shadow-[0_8px_40px_rgba(14,165,233,0.15)] backdrop-blur-3xl"
         >
-
             {{-- ICON --}}
             <div
                 class="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-r from-emerald-400 to-sky-500 text-white shadow-xl shadow-sky-500/30"
@@ -66,7 +61,6 @@
             >
 
                 <div class="grid gap-5 sm:grid-cols-2">
-
                     <div>
                         <p class="text-xs font-bold uppercase text-slate-500">
                             Mã đơn hàng
@@ -105,19 +99,23 @@
                         <span
                             class="mt-2 inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700"
                         >
-                            {{ ucfirst($order->status) }}
+                            {{ match($order->status) {
+                                'pending' => 'Chờ xử lý',
+                                'processing' => 'Đang xử lý',
+                                'shipping' => 'Đang giao',
+                                'completed' => 'Hoàn thành',
+                                'cancelled' => 'Đã huỷ',
+                                default => ucfirst($order->status)
+                            } }}
                         </span>
                     </div>
-
                 </div>
-
             </div>
 
             {{-- ACTIONS --}}
             <div
                 class="mt-10 flex flex-col justify-center gap-4 sm:flex-row"
             >
-
                 <a
                     href="{{ route('client.orders.show', $order->id) }}"
                     class="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-4 text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-sky-500/30 transition hover:scale-[1.02]"
@@ -131,12 +129,8 @@
                 >
                     Tiếp tục mua sắm
                 </a>
-
             </div>
-
         </div>
-
     </div>
 </section>
-
 @endsection

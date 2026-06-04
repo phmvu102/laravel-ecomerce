@@ -137,15 +137,15 @@
                         </label>
 
                         <label class="flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-sky-200 hover:bg-sky-50 transition">
-                            <input type="radio" name="payment_method" value="vnpay" class="h-5 w-5 text-sky-600">
+                            <input type="radio" name="payment_method" value="bank" class="h-5 w-5 text-sky-600">
                             <div>
-                                <p class="font-semibold text-slate-800">VNPay</p>
-                                <p class="text-sm text-slate-500">Thanh toán online VNPay</p>
+                                <p class="font-semibold text-slate-800">Ngân hàng</p>
+                                <p class="text-sm text-slate-500">Thanh toán bằng tài khoản ngân hàng</p>
                             </div>
                         </label>
 
-                        <label class="flex cursor-pointer items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 hover:border-sky-200 hover:bg-sky-50 transition">
-                            <input type="radio" name="payment_method" value="momo" class="h-5 w-5 text-sky-600">
+                        <label class="flex cursor-not-allowed items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 opacity-60">
+                            <input type="radio" name="payment_method" value="momo" disabled class="h-5 w-5 text-sky-600">
                             <div>
                                 <p class="font-semibold text-slate-800">Momo</p>
                                 <p class="text-sm text-slate-500">Ví điện tử Momo</p>
@@ -170,36 +170,42 @@
 
                 <div class="mt-6 space-y-6">
                     @foreach($cart as $item)
+                    @php
+                        $variant = $item->productVariant;
+                        $product = $variant?->product;
+                        $image = $variant?->image;
+                        $name = $product?->name ?? $item->product_name ?? 'Sản phẩm';
+                    @endphp
+
                     <div class="flex gap-4">
                         <div class="h-20 w-20 overflow-hidden rounded-2xl bg-slate-100 flex-shrink-0">
-                            @if(!empty($item['image']))
-                                <img src="{{ asset('storage/' . $item['image']) }}" alt="{{ $item['name'] }}" class="h-full w-full object-cover">
+                            @if($image)
+                                <img src="{{ asset('storage/' . $image) }}" alt="{{ $name }}" class="h-full w-full object-cover">
                             @else
                                 <div class="flex h-full w-full items-center justify-center text-xs text-slate-400 font-medium">No Image</div>
                             @endif
                         </div>
 
                         <div class="flex-1">
-                            <h3 class="font-semibold text-slate-800 leading-tight">{{ $item['name'] }}</h3>
-                            <p class="text-sm text-slate-500 mt-1">Số lượng: {{ $item['quantity'] }}</p>
+                            <h3 class="font-semibold text-slate-800 leading-tight">{{ $name }}</h3>
+                            <p class="text-sm text-slate-500 mt-1">Số lượng: {{ $item->quantity }}</p>
                             <p class="mt-2 font-bold text-slate-900">
-                                {{ number_format($item['price'] * $item['quantity'], 0, ',', '.') }} ₫
+                                {{ number_format($item->price * $item->quantity, 0, ',', '.') }} VNĐ
                             </p>
                         </div>
                     </div>
-                    @endforeach
+                @endforeach
                 </div>
 
                 <div class="mt-8 border-t border-slate-200 pt-6">
                     <div class="flex justify-between items-baseline">
-                        <span class="text-lg font-medium text-slate-600">Tổng thanh toán</span>
-                        <span class="text-3xl font-black text-slate-900">
-                            {{ number_format($subtotal, 0, ',', '.') }} ₫
+                        <span class=" font-medium text-slate-600">Tổng thanh toán</span>
+                        <span class="text-2xl font-black text-slate-900">
+                            {{ number_format($subtotal, 0, ',', '.') }} VNĐ
                         </span>
                     </div>
                 </div>
             </aside>
-
         </div>
     </div>
 </section>

@@ -10,7 +10,6 @@
             radial-gradient(circle at bottom right, rgba(59,130,246,.14), transparent 35%),
             linear-gradient(to bottom, #f0f9ff, #e0f2fe, #f8fafc);
     }
-
     .glass-card {
         background: rgba(255,255,255,0.45);
         backdrop-filter: blur(24px) saturate(180%);
@@ -20,33 +19,27 @@
             0 10px 30px rgba(15,23,42,.06),
             inset 0 1px 0 rgba(255,255,255,.45);
     }
-
     .glass-soft {
         background: rgba(255,255,255,0.28);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255,255,255,.25);
     }
-
     .menu-link {
         transition: .25s ease;
     }
-
     .menu-link:hover {
         transform: translateX(4px);
     }
-
     .menu-link.active {
         background: linear-gradient(to right, #0ea5e9, #38bdf8);
         color: white;
         box-shadow: 0 10px 20px rgba(14,165,233,.25);
     }
-
     .stat-card {
         position: relative;
         overflow: hidden;
     }
-
     .stat-card::before {
         content: "";
         position: absolute;
@@ -57,15 +50,12 @@
         top: -40px;
         right: -40px;
     }
-
     .order-row {
         transition: .25s ease;
     }
-
     .order-row:hover {
         background: rgba(255,255,255,.55);
     }
-
     .status {
         padding: .35rem .85rem;
         border-radius: 999px;
@@ -75,36 +65,29 @@
         align-items: center;
         gap: .35rem;
     }
-
     .status.pending {
         background: rgba(251,191,36,.12);
         color: #b45309;
     }
-
     .status.processing {
         background: rgba(59,130,246,.12);
         color: #1d4ed8;
     }
-
     .status.completed {
         background: rgba(34,197,94,.12);
         color: #15803d;
     }
-
     .status.cancelled {
         background: rgba(239,68,68,.12);
         color: #b91c1c;
     }
-
     .profile-avatar {
         background:
             linear-gradient(135deg, #0ea5e9, #2563eb);
     }
-
     .table-scroll::-webkit-scrollbar {
         height: 6px;
     }
-
     .table-scroll::-webkit-scrollbar-thumb {
         background: rgba(148,163,184,.4);
         border-radius: 999px;
@@ -112,11 +95,9 @@
 </style>
 <div class="min-h-screen py-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
         {{-- Header --}}
         <div class="glass-card rounded-[2rem] p-8 mb-8">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-
                 <div class="flex items-center gap-5">
                     <div class="profile-avatar w-20 h-20 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-2xl shadow-sky-500/20">
                         {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
@@ -163,12 +144,10 @@
                         Tiếp tục mua sắm
                     </a>
                 </div>
-
             </div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
-
             {{-- Sidebar --}}
             <aside class="xl:col-span-3">
                 <div class="glass-card rounded-[2rem] p-5 sticky top-24">
@@ -205,7 +184,6 @@
                             </svg>
                             Bảo mật
                         </a>
-
                     </div>
 
                     <div class="mt-8 p-5 rounded-3xl bg-gradient-to-br from-sky-500 to-blue-600 text-white relative overflow-hidden">
@@ -223,17 +201,14 @@
                             Nhận ưu đãi độc quyền và cập nhật sản phẩm mới nhanh nhất.
                         </p>
                     </div>
-
                 </div>
             </aside>
 
             {{-- Main Content --}}
             <main class="xl:col-span-9 space-y-8">
-
                 {{-- Stats --}}
                 <section id="dashboard">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
                         <div class="glass-card stat-card rounded-[2rem] p-6">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -293,13 +268,11 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </section>
 
                 {{-- Orders --}}
                 <section id="orders" class="glass-card rounded-[2rem] p-7">
-
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <p class="text-sky-500 text-xs uppercase tracking-[0.25em] font-bold mb-2">
@@ -311,7 +284,7 @@
                             </h2>
                         </div>
 
-                        <a href="#"
+                        <a href="{{ route('client.orders.index') }}"
                            class="text-sm font-bold text-sky-600 hover:text-sky-700">
                             Xem tất cả
                         </a>
@@ -365,11 +338,19 @@
                                     </td>
 
                                     <td class="py-5">
-
+                                        @php
+                                            $statusText = match($order->status){
+                                                'pending' => 'Chờ xử lý',
+                                                'processing' => 'Đang xử lý',
+                                                'shipping' => 'Đang giao',
+                                                'completed' => 'Hoàn thành',
+                                                'cancelled' => 'Đã huỷ',
+                                                default => ucfirst($order->status)
+                                            };
+                                        @endphp
                                         <span class="status {{ $order->status }}">
-                                            {{ ucfirst($order->status) }}
+                                            {{ $statusText }}
                                         </span>
-
                                     </td>
 
                                     <td class="py-5 font-black text-slate-800">
@@ -377,15 +358,11 @@
                                     </td>
 
                                     <td class="py-5 text-right">
-
                                         <a href="{{ route('client.orders.show', $order->id) }}"
                                         class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 transition">
-
                                             Chi tiết
                                         </a>
-
                                     </td>
-
                                 </tr>
 
                                 @empty
@@ -418,7 +395,6 @@
 
                     <div class="glass-soft rounded-3xl p-6">
                         <div class="grid md:grid-cols-2 gap-6">
-
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
                                     Họ và tên
@@ -458,7 +434,6 @@
                                     {{ auth()->user()->address ?? 'Chưa cập nhật địa chỉ' }}
                                 </h3>
                             </div>
-
                         </div>
                     </div>
                 </section>
@@ -478,7 +453,6 @@
                     </div>
 
                     <div class="grid md:grid-cols-2 gap-6">
-
                         <div class="glass-soft rounded-3xl p-6">
                             <div class="flex items-start gap-4">
                                 <div class="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-600 flex items-center justify-center flex-shrink-0">
@@ -496,10 +470,11 @@
                                         Đổi mật khẩu định kỳ để bảo vệ tài khoản của bạn an toàn hơn.
                                     </p>
 
-                                    <a href="{{ route('password.request') }}"
-                                       class="inline-flex items-center gap-2 text-sky-600 font-bold hover:text-sky-700">
-                                        Đổi mật khẩu
-                                    </a>
+                                    <button
+                                        onclick="openProfileModal()"
+                                        class="inline-flex items-center gap-2 text-sky-600 font-bold hover:text-sky-700">
+                                        Chỉnh sửa hồ sơ
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -533,12 +508,9 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </section>
-
             </main>
-
         </div>
     </div>
 </div>
@@ -572,7 +544,6 @@
 
         {{-- CONTENT --}}
         <div class="max-h-[80vh] overflow-y-auto p-8 space-y-8 bg-slate-50">
-
             <div class="glass-card rounded-[2rem] p-6">
                 @include('profile.partials.update-profile-information-form')
             </div>
@@ -584,9 +555,7 @@
             <div class="glass-card rounded-[2rem] p-6 border border-red-100">
                 @include('profile.partials.delete-user-form')
             </div>
-
         </div>
-
     </div>
 </div>
 

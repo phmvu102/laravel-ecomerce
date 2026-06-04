@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Payment;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +28,7 @@ class OrderController extends Controller
             ->latest()
             ->paginate(10);
 
-        return view('profile.orders.index', compact('orders'));
+        return view('client.orders.index', compact('orders'));
     }
 
     /*
@@ -90,8 +91,14 @@ class OrderController extends Controller
             'shipping_email' => 'nullable|email|max:255',
             'shipping_address' => 'required|string|max:1000',
             'customer_note' => 'nullable|string|max:1000',
-            'payment_method' => 'required|in:cod,vnpay,momo',
+            'payment_method' => 'required|in:cod,bank,vnpay,momo',
         ]);
+
+        if ($request->payment_method === 'momo') {
+            return back()
+                ->withInput()
+                ->with('error', 'Chua cau hinh thong tin Merchant MoMo.');
+        }
 
         $cart = Cart::where('user_id', Auth::id())
             ->first();
@@ -124,6 +131,9 @@ class OrderController extends Controller
             $discount = 0;
 
             $total = $subtotal + $shippingFee - $discount;
+            $paymentMethod = $request->payment_method === 'bank'
+                ? 'vnpay'
+                : $request->payment_method;
 
             /*
             |--------------------------------------------------------------------------
@@ -146,11 +156,9 @@ class OrderController extends Controller
                 'discount_amount' => $discount,
                 'total_amount' => $total,
 
-                'payment_method' => $request->payment_method,
+                'payment_method' => $paymentMethod,
 
-                'payment_status' => $request->payment_method === 'cod'
-                    ? 'unpaid'
-                    : 'pending',
+                'payment_status' => 'unpaid',
 
                 'status' => 'pending',
             ]);
@@ -210,6 +218,17 @@ class OrderController extends Controller
                 ]);
             }
 
+            if ($paymentMethod !== 'cod') {
+                Payment::create([
+                    'order_id' => $order->id,
+                    'transaction_id' => null,
+                    'payment_method' => $paymentMethod,
+                    'amount' => $total,
+                    'status' => 'pending',
+                    'raw_response_data' => null,
+                ]);
+            }
+
             /*
             |--------------------------------------------------------------------------
             | Xóa cart
@@ -221,21 +240,25 @@ class OrderController extends Controller
 
             /*
             |--------------------------------------------------------------------------
-            | COD
+            | COD / VNPay / Momo
             |--------------------------------------------------------------------------
             */
-            if ($request->payment_method === 'cod') {
-
+            if ($paymentMethod === 'cod') {
                 return redirect()
                     ->route('client.orders.success', $order->id)
                     ->with('success', 'Đặt hàng thành công.');
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | VNPay / Momo
-            |--------------------------------------------------------------------------
-            */
+            if ($paymentMethod === 'vnpay') {
+                return redirect()
+                    ->route('client.payment.vnpay', $order->id);
+            }
+
+            if ($paymentMethod === 'momo') {
+                return redirect()
+                    ->route('client.payment.momo', $order->id);
+            }
+
             return redirect()
                 ->route('client.orders.success', $order->id)
                 ->with('success', 'Đặt hàng thành công.');
@@ -273,11 +296,11 @@ class OrderController extends Controller
     */
     public function cancel($id)
     {
-        $order = Order::with('items.variant')
+        $order = Order::with('items.productVariant')
             ->where('user_id', Auth::id())
             ->findOrFail($id);
 
-        if (!in_array($order->status, ['pending', 'processing'])) {
+        if (!in_array($order->status, ['pending', 'confirmed', 'processing'])) {
 
             return back()->with(
                 'error',
@@ -296,9 +319,9 @@ class OrderController extends Controller
             */
             foreach ($order->items as $item) {
 
-                if ($item->variant) {
+                if ($item->productVariant) {
 
-                    $item->variant->increment(
+                    $item->productVariant->increment(
                         'stock',
                         $item->quantity
                     );
