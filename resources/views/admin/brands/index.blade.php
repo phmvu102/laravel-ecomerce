@@ -402,7 +402,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     const modal = document.getElementById('brandModal');
     const form = document.getElementById('brandForm');
@@ -483,4 +483,4 @@
 
     lucide.createIcons();
 </script>
-@endsection
+@endpush

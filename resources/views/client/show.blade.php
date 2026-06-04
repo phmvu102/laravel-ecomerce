@@ -12,7 +12,6 @@
         min-height: 100vh;
     }
 
-    /* Thumbnail gallery */
     .thumb-list {
         display: flex;
         flex-direction: column;
@@ -37,7 +36,6 @@
     .thumb-item.active { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,0.15); }
     .thumb-item img { width: 100%; height: 100%; object-fit: contain; }
 
-    /* Main image */
     .main-img-wrap {
         background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
         border-radius: 1.5rem;
@@ -59,7 +57,6 @@
     }
     .main-img-wrap:hover img { transform: scale(1.04); }
 
-    /* Badges */
     .badge-sale {
         background: #fff1f2; color: #e11d48;
         border: 1px solid #fecdd3;
@@ -82,7 +79,6 @@
         padding: 0.25rem 0.65rem; border-radius: 0.5rem;
     }
 
-    /* Variant buttons */
     .variant-btn {
         padding: 0.4rem 1rem;
         border-radius: 0.65rem;
@@ -106,7 +102,6 @@
         text-decoration: line-through;
     }
 
-    /* Color dots */
     .color-dot {
         width: 2rem; height: 2rem;
         border-radius: 50%;
@@ -121,7 +116,6 @@
         box-shadow: 0 0 0 3px rgba(14,165,233,0.2);
     }
 
-    /* Qty control */
     .qty-btn {
         width: 2.25rem; height: 2.25rem;
         border-radius: 0.65rem;
@@ -135,7 +129,6 @@
     }
     .qty-btn:hover { border-color: #0ea5e9; color: #0ea5e9; background: #f0f9ff; }
 
-    /* CTA buttons */
     .btn-primary {
         display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
         background: #0ea5e9;
@@ -164,7 +157,6 @@
     }
     .btn-secondary:hover { background: #f0f9ff; transform: translateY(-1px); }
 
-    /* Info card */
     .info-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
@@ -172,11 +164,9 @@
         padding: 1.25rem 1.5rem;
     }
 
-    /* Rating stars */
     .star { color: #f59e0b; }
     .star-empty { color: #e2e8f0; }
 
-    /* Tab buttons */
     .tab-btn {
         padding: 0.75rem 1.5rem;
         font-size: 0.875rem;
@@ -190,7 +180,6 @@
     .tab-btn:hover { color: #475569; }
     .tab-btn.active { color: #0ea5e9; border-bottom-color: #0ea5e9; }
 
-    /* Related product card */
     .related-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
@@ -216,7 +205,6 @@
     }
     .related-card:hover .related-img img { transform: scale(1.06); }
 
-    /* Trust badges */
     .trust-item {
         display: flex; align-items: center; gap: 0.75rem;
         padding: 0.875rem 1rem;
@@ -229,31 +217,33 @@
 
 @section('content')
 @php
-    $variants = $product->variants ?? collect();
-    $primaryVariant = $variants->sortBy(fn ($variant) => $variant->sale_price ?? $variant->price)->first();
-    $primaryValueIds = $primaryVariant
-        ? $primaryVariant->attributeValues->pluck('id')->all()
-        : [];
-    $variantImages = $variants->pluck('image')->filter()->unique()->values();
-    $fallbackImage = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80';
-    $mainImage = $variantImages->first();
-    $currentPrice = $primaryVariant ? ($primaryVariant->sale_price ?? $primaryVariant->price) : $product->min_price;
-    $originalPrice = $primaryVariant ? $primaryVariant->price : $product->original_price;
-    $isOnSale = $product->is_on_sale && $originalPrice > $currentPrice;
-    $savingAmount = max(0, $originalPrice - $currentPrice);
+    $variants       = $product->variants ?? collect();
+    $primaryVariant = $variants->sortBy(fn ($v) => $v->sale_price ?? $v->price)->first();
+    $primaryValueIds = $primaryVariant ? $primaryVariant->attributeValues->pluck('id')->all() : [];
+    $variantImages  = $variants->pluck('image')->filter()->unique()->values();
+    $fallbackImage  = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80';
+    $mainImage      = $variantImages->first();
+    $currentPrice   = $primaryVariant ? ($primaryVariant->sale_price ?? $primaryVariant->price) : $product->min_price;
+    $originalPrice  = $primaryVariant ? $primaryVariant->price : $product->original_price;
+    $isOnSale       = $product->is_on_sale && $originalPrice > $currentPrice;
+    $savingAmount   = max(0, $originalPrice - $currentPrice);
+
     $attributeGroups = $variants
-        ->flatMap(fn ($variant) => $variant->attributeValues)
+        ->flatMap(fn ($v) => $v->attributeValues)
         ->unique('id')
         ->groupBy(fn ($value) => $value->attribute->name ?? $value->attribute->code ?? 'Thuộc tính');
+
     $specifications = $product->specifications ?? [];
-    $variantPayload = $variants->map(fn ($variant) => [
-        'id' => $variant->id,
-        'sku' => $variant->sku,
-        'price' => (float) $variant->price,
-        'sale_price' => $variant->sale_price ? (float) $variant->sale_price : null,
-        'final_price' => (float) ($variant->sale_price ?? $variant->price),
-        'image_url' => $variant->image ? asset('storage/'.$variant->image) : null,
-        'attribute_value_ids' => $variant->attributeValues->pluck('id')->values(),
+
+    $variantPayload = $variants->map(fn ($v) => [
+        'id'                  => $v->id,
+        'sku'                 => $v->sku,
+        'price'               => (float) $v->price,
+        'sale_price'          => $v->sale_price ? (float) $v->sale_price : null,
+        'final_price'         => (float) ($v->sale_price ?? $v->price),
+        'image_url'           => $v->image ? asset('storage/' . $v->image) : null,
+        'attribute_value_ids' => $v->attributeValues->pluck('id')->values()->all(),
+        'stock'               => (int) ($v->stock ?? $v->quantity ?? 0),
     ])->values();
 @endphp
 
@@ -273,16 +263,15 @@
             <span class="text-slate-600 font-semibold line-clamp-1">{{ $product->name }}</span>
         </nav>
 
-        {{-- ===== PRODUCT MAIN SECTION ===== --}}
+        {{-- Product Main Section --}}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 xl:gap-14">
 
-            {{-- LEFT: Gallery --}}
+            {{-- Gallery --}}
             <div class="flex gap-4">
-                {{-- Thumbnail list --}}
                 <div class="thumb-list hidden sm:flex">
                     @forelse($variantImages as $i => $img)
-                        <div class="thumb-item {{ $i === 0 ? 'active' : '' }}" onclick="switchImage(this, '{{ asset('storage/'.$img) }}')">
-                            <img src="{{ asset('storage/'.$img) }}" alt="{{ $product->name }}">
+                        <div class="thumb-item {{ $i === 0 ? 'active' : '' }}" onclick="switchImage(this, '{{ asset('storage/' . $img) }}')">
+                            <img src="{{ asset('storage/' . $img) }}" alt="{{ $product->name }}">
                         </div>
                     @empty
                         <div class="thumb-item active" onclick="switchImage(this, '{{ $fallbackImage }}')">
@@ -291,42 +280,42 @@
                     @endforelse
                 </div>
 
-                {{-- Main image --}}
                 <div class="flex-1">
                     <div class="main-img-wrap">
-                        {{-- Badge --}}
                         <div class="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
-                            <span id="salePercentBadge" class="badge-sale {{ $isOnSale ? '' : 'hidden' }}">-{{ $isOnSale ? round((1 - $currentPrice / $originalPrice) * 100) : 0 }}%</span>
+                            <span id="salePercentBadge" class="badge-sale {{ $isOnSale ? '' : 'hidden' }}">
+                                -{{ $isOnSale ? round((1 - $currentPrice / $originalPrice) * 100) : 0 }}%
+                            </span>
                             @if($product->is_featured)
                                 <span class="badge-hot">Hot</span>
                             @endif
                         </div>
-                        {{-- Wishlist --}}
+
                         <button class="absolute top-4 right-4 z-10 w-10 h-10 bg-white rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:border-rose-200 transition-all shadow-sm">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                         </button>
 
                         <img id="mainImage"
-                             src="{{ $mainImage ? asset('storage/'.$mainImage) : $fallbackImage }}"
+                             src="{{ $mainImage ? asset('storage/' . $mainImage) : $fallbackImage }}"
                              alt="{{ $product->name }}">
                     </div>
 
                     {{-- Mobile thumbs --}}
                     <div class="flex gap-2.5 mt-3 sm:hidden overflow-x-auto pb-1">
                         @forelse($variantImages as $i => $img)
-                        <div class="thumb-item flex-shrink-0 {{ $i === 0 ? 'active' : '' }}" onclick="switchImage(this, '{{ asset('storage/'.$img) }}')">
-                            <img src="{{ asset('storage/'.$img) }}" alt="{{ $product->name }}">
-                        </div>
+                            <div class="thumb-item flex-shrink-0 {{ $i === 0 ? 'active' : '' }}" onclick="switchImage(this, '{{ asset('storage/' . $img) }}')">
+                                <img src="{{ asset('storage/' . $img) }}" alt="{{ $product->name }}">
+                            </div>
                         @empty
-                        <div class="thumb-item flex-shrink-0 active" onclick="switchImage(this, '{{ $fallbackImage }}')">
-                            <img src="{{ $fallbackImage }}" alt="{{ $product->name }}">
-                        </div>
+                            <div class="thumb-item flex-shrink-0 active" onclick="switchImage(this, '{{ $fallbackImage }}')">
+                                <img src="{{ $fallbackImage }}" alt="{{ $product->name }}">
+                            </div>
                         @endforelse
                     </div>
                 </div>
             </div>
 
-            {{-- RIGHT: Info --}}
+            {{-- Product Info --}}
             <div class="flex flex-col gap-5">
 
                 {{-- Brand + Name --}}
@@ -374,65 +363,72 @@
                     <span id="variantOriginalPrice" class="text-lg text-slate-400 line-through font-medium mb-0.5 {{ $isOnSale ? '' : 'hidden' }}">
                         {{ number_format($originalPrice, 0, ',', '.') }}đ
                     </span>
-                    <span id="variantSavingBadge" class="badge-sale mb-1 {{ $isOnSale ? '' : 'hidden' }}">Tiết kiệm {{ number_format($savingAmount, 0, ',', '.') }}đ</span>
+                    <span id="variantSavingBadge" class="badge-sale mb-1 {{ $isOnSale ? '' : 'hidden' }}">
+                        Tiết kiệm {{ number_format($savingAmount, 0, ',', '.') }}đ
+                    </span>
                 </div>
 
+                {{-- Attribute Groups --}}
                 @foreach($attributeGroups as $attributeName => $values)
-                @php
-                    $activeColorValue = $values->first(fn ($value) => in_array($value->id, $primaryValueIds)) ?? $values->first();
-                @endphp
-                <div class="info-card">
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{{ $attributeName }}</p>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        @foreach($values as $i => $value)
-                            @if($value->extra_value)
-                                <button class="color-dot variant-option {{ in_array($value->id, $primaryValueIds) ? 'active' : '' }}"
-                                        style="background-color: {{ $value->extra_value }}; {{ strtolower($value->extra_value) === '#ffffff' ? 'border: 2px solid #e2e8f0;' : '' }}"
-                                        title="{{ $value->value }}"
-                                        data-name="{{ $value->value }}"
-                                        data-value-id="{{ $value->id }}"
-                                        onclick="selectColor(this)">
-                                </button>
-                            @else
-                                <button class="variant-btn variant-option {{ in_array($value->id, $primaryValueIds) ? 'active' : '' }}" data-value-id="{{ $value->id }}" onclick="selectVariant(this)">
-                                    {{ $value->value }}
-                                </button>
-                            @endif
-                        @endforeach
+                    @php
+                        $activeColorValue = $values->first(fn ($v) => in_array($v->id, $primaryValueIds)) ?? $values->first();
+                    @endphp
+                    <div class="info-card">
+                        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">{{ $attributeName }}</p>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            @foreach($values as $value)
+                                @if($value->extra_value)
+                                    <button class="color-dot variant-option {{ in_array($value->id, $primaryValueIds) ? 'active' : '' }}"
+                                            style="background-color: {{ $value->extra_value }}; {{ strtolower($value->extra_value) === '#ffffff' ? 'border: 2px solid #e2e8f0;' : '' }}"
+                                            title="{{ $value->value }}"
+                                            data-name="{{ $value->value }}"
+                                            data-value-id="{{ $value->id }}"
+                                            onclick="selectColor(this)">
+                                    </button>
+                                @else
+                                    <button class="variant-btn variant-option {{ in_array($value->id, $primaryValueIds) ? 'active' : '' }}"
+                                            data-value-id="{{ $value->id }}"
+                                            onclick="selectVariant(this)">
+                                        {{ $value->value }}
+                                    </button>
+                                @endif
+                            @endforeach
+                        </div>
+                        @if($values->contains(fn ($v) => filled($v->extra_value)))
+                            <p class="color-label text-xs text-slate-500 mt-2 font-medium">{{ $activeColorValue->value }}</p>
+                        @endif
                     </div>
-                    @if($values->contains(fn ($value) => filled($value->extra_value)))
-                        <p class="color-label text-xs text-slate-500 mt-2 font-medium">{{ $activeColorValue->value }}</p>
-                    @endif
-                </div>
                 @endforeach
 
-                {{-- Qty + Add to cart --}}
-                <form action="{{ route('client.cart.add') }}" method="POST" class="flex flex-col gap-3">
-                    @csrf
-                    <input type="hidden" name="product_variant_id" id="selectedVariantId" value="{{ $primaryVariant?->id }}">
-                    <input type="hidden" name="quantity" id="selectedQuantity" value="1">
-                    <div class="flex items-center gap-3">
+                {{-- Quantity + Actions --}}
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center gap-3 flex-wrap">
                         <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Số lượng:</p>
                         <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1">
                             <button type="button" class="qty-btn" onclick="changeQty(-1)">−</button>
                             <span id="qtyDisplay" class="w-10 text-center text-sm font-bold text-slate-800">1</span>
                             <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
                         </div>
+                        <span id="variantStockDisplay" class="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg ml-2">
+                            Đang kiểm tra kho...
+                        </span>
                     </div>
 
+                    <input type="hidden" id="selectedVariantId" value="{{ $primaryVariant ? $primaryVariant->id : '' }}">
+
                     <div class="grid grid-cols-2 gap-3 mt-1">
-                        <button type="submit" class="btn-primary">
+                        <button type="button" id="btnAddToCart" onclick="handleCartAction('add')" class="btn-primary">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                            Thêm vào giỏ
+                            <span class="btn-text">Thêm vào giỏ</span>
                         </button>
-                        <button type="submit" class="btn-secondary" formaction="{{ route('client.cart.add') }}">
+                        <button type="button" id="btnBuyNow" onclick="handleCartAction('buy')" class="btn-secondary">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            Mua ngay
+                            <span class="btn-text">Mua ngay</span>
                         </button>
                     </div>
                 </form>
 
-                {{-- Trust badges --}}
+                {{-- Trust Badges --}}
                 <div class="grid grid-cols-2 gap-2.5">
                     @foreach([
                         ['icon' => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', 'label' => 'Hàng chính hãng 100%', 'color' => 'text-emerald-500 bg-emerald-50'],
@@ -440,21 +436,20 @@
                         ['icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'label' => 'Giao hàng nhanh 2h', 'color' => 'text-orange-500 bg-orange-50'],
                         ['icon' => 'M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z', 'label' => 'Hỗ trợ 24/7', 'color' => 'text-purple-500 bg-purple-50'],
                     ] as $trust)
-                    <div class="trust-item">
-                        <div class="w-8 h-8 rounded-lg {{ $trust['color'] }} flex items-center justify-center flex-shrink-0">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $trust['icon'] }}"/></svg>
+                        <div class="trust-item">
+                            <div class="w-8 h-8 rounded-lg {{ $trust['color'] }} flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $trust['icon'] }}"/></svg>
+                            </div>
+                            <span class="text-xs font-semibold text-slate-600">{{ $trust['label'] }}</span>
                         </div>
-                        <span class="text-xs font-semibold text-slate-600">{{ $trust['label'] }}</span>
-                    </div>
                     @endforeach
                 </div>
 
             </div>
         </div>
 
-        {{-- ===== TABS: Description / Specs / Reviews ===== --}}
+        {{-- Tabs --}}
         <div class="mt-14 bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            {{-- Tab header --}}
             <div class="flex border-b border-slate-100 overflow-x-auto">
                 <button class="tab-btn active" onclick="switchTab(this, 'tab-desc')">Mô tả sản phẩm</button>
                 <button class="tab-btn" onclick="switchTab(this, 'tab-specs')">Thông số kỹ thuật</button>
@@ -464,7 +459,6 @@
                 </button>
             </div>
 
-            {{-- Tab: Description --}}
             <div id="tab-desc" class="tab-content p-6 sm:p-8">
                 <div class="prose prose-slate max-w-none text-sm sm:text-base leading-relaxed text-slate-600">
                     @if($product->short_description)
@@ -478,58 +472,54 @@
                 </div>
             </div>
 
-            {{-- Tab: Specs --}}
             <div id="tab-specs" class="tab-content hidden p-6 sm:p-8">
                 <div class="overflow-hidden rounded-xl border border-slate-100">
                     <table class="w-full text-sm">
                         <tbody>
                             @forelse($specifications as $key => $value)
-                            @php
-                                $specName = is_array($value) ? ($value['name'] ?? $value[0] ?? $key) : $key;
-                                $specValue = is_array($value) ? ($value['value'] ?? $value[1] ?? '') : $value;
-                            @endphp
-                            <tr class="{{ $loop->index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white' }}">
-                                <td class="py-3 px-4 font-semibold text-slate-500 w-2/5 border-b border-slate-100">{{ $specName }}</td>
-                                <td class="py-3 px-4 text-slate-700 border-b border-slate-100">{{ $specValue }}</td>
-                            </tr>
+                                @php
+                                    $specName  = is_array($value) ? ($value['name']  ?? $value[0] ?? $key) : $key;
+                                    $specValue = is_array($value) ? ($value['value'] ?? $value[1] ?? '')   : $value;
+                                @endphp
+                                <tr class="{{ $loop->index % 2 === 0 ? 'bg-slate-50/50' : 'bg-white' }}">
+                                    <td class="py-3 px-4 font-semibold text-slate-500 w-2/5 border-b border-slate-100">{{ $specName }}</td>
+                                    <td class="py-3 px-4 text-slate-700 border-b border-slate-100">{{ $specValue }}</td>
+                                </tr>
                             @empty
-                            <tr>
-                                <td colspan="2" class="py-4 px-4 text-slate-500 text-center">Chưa có thông số kỹ thuật.</td>
-                            </tr>
+                                <tr>
+                                    <td colspan="2" class="py-4 px-4 text-slate-500 text-center">Chưa có thông số kỹ thuật.</td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {{-- Tab: Reviews --}}
             <div id="tab-reviews" class="tab-content hidden p-6 sm:p-8">
-                {{-- Summary --}}
                 <div class="flex flex-col sm:flex-row gap-8 mb-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
                     <div class="text-center flex-shrink-0">
                         <div class="text-6xl font-black text-slate-900">0</div>
                         <div class="flex justify-center gap-0.5 mt-2">
                             @for($i = 1; $i <= 5; $i++)
-                            <svg class="w-5 h-5 star-empty" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                <svg class="w-5 h-5 star-empty" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                             @endfor
                         </div>
                         <p class="text-sm text-slate-400 mt-1">0 đánh giá</p>
                     </div>
                     <div class="flex-1 space-y-2">
                         @foreach([5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0] as $stars => $count)
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-bold text-slate-500 w-3">{{ $stars }}</span>
-                            <svg class="w-3.5 h-3.5 star flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                            <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                <div class="h-full bg-amber-400 rounded-full" style="width: 0%"></div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold text-slate-500 w-3">{{ $stars }}</span>
+                                <svg class="w-3.5 h-3.5 star flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-amber-400 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <span class="text-xs text-slate-400 w-6 text-right">{{ $count }}</span>
                             </div>
-                            <span class="text-xs text-slate-400 w-6 text-right">{{ $count }}</span>
-                        </div>
                         @endforeach
                     </div>
                 </div>
 
-                {{-- Review list --}}
                 <div class="space-y-5">
                     <div class="p-5 bg-white border border-slate-100 rounded-2xl text-sm text-slate-500">
                         Chưa có đánh giá cho sản phẩm này.
@@ -538,7 +528,7 @@
             </div>
         </div>
 
-        {{-- ===== RELATED PRODUCTS ===== --}}
+        {{-- Related Products --}}
         <div class="mt-14">
             <div class="flex items-end justify-between mb-6">
                 <div>
@@ -553,24 +543,22 @@
 
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 @forelse($relatedProducts ?? [] as $related)
-                @php
-                    $relatedImage = $related->variants->pluck('image')->filter()->first();
-                @endphp
-                <a href="{{ route('client.product.show', $related->slug) }}" class="related-card block">
-                    <div class="related-img">
-                        <img src="{{ $relatedImage ? asset('storage/'.$relatedImage) : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=60' }}"
-                             alt="{{ $related->name }}">
-                    </div>
-                    <div class="p-3.5">
-                        <span class="text-[10px] font-black tracking-widest uppercase text-slate-400">{{ $related->brand->name ?? '' }}</span>
-                        <h4 class="text-sm font-bold text-slate-800 line-clamp-2 leading-snug mt-0.5">{{ $related->name }}</h4>
-                        <p class="text-sm font-black text-slate-900 mt-2">{{ number_format($related->min_price, 0, ',', '.') }}đ</p>
-                    </div>
-                </a>
+                    @php $relatedImage = $related->variants->pluck('image')->filter()->first(); @endphp
+                    <a href="{{ route('client.product.show', $related->slug) }}" class="related-card block">
+                        <div class="related-img">
+                            <img src="{{ $relatedImage ? asset('storage/' . $relatedImage) : 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=60' }}"
+                                 alt="{{ $related->name }}">
+                        </div>
+                        <div class="p-3.5">
+                            <span class="text-[10px] font-black tracking-widest uppercase text-slate-400">{{ $related->brand->name ?? '' }}</span>
+                            <h4 class="text-sm font-bold text-slate-800 line-clamp-2 leading-snug mt-0.5">{{ $related->name }}</h4>
+                            <p class="text-sm font-black text-slate-900 mt-2">{{ number_format($related->min_price, 0, ',', '.') }}đ</p>
+                        </div>
+                    </a>
                 @empty
-                <div class="col-span-full p-5 bg-white border border-slate-100 rounded-2xl text-sm text-slate-500">
-                    Chưa có sản phẩm liên quan.
-                </div>
+                    <div class="col-span-full p-5 bg-white border border-slate-100 rounded-2xl text-sm text-slate-500">
+                        Chưa có sản phẩm liên quan.
+                    </div>
                 @endforelse
             </div>
         </div>
@@ -581,105 +569,182 @@
 
 @push('scripts')
 <script>
-const productVariants = @json($variantPayload);
+    const productVariants = @json($variantPayload);
+    let currentQuantity = 1;
+    let maxAvailableStock = 99;
 
-function formatCurrency(value) {
-    return new Intl.NumberFormat('vi-VN').format(Number(value || 0)) + 'đ';
-}
+    function formatVND(amount) {
+        return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+    }
 
-function setHidden(element, hidden) {
-    if (!element) return;
-    element.classList.toggle('hidden', hidden);
-}
+    function changeQty(amount) {
+        currentQuantity += amount;
+        if (currentQuantity < 1) currentQuantity = 1;
+        if (currentQuantity > maxAvailableStock) {
+            currentQuantity = maxAvailableStock;
+            alert(`Sản phẩm này chỉ còn tối đa ${maxAvailableStock} sản phẩm trong kho!`);
+        }
+        document.getElementById('qtyDisplay').textContent = currentQuantity;
+    }
 
-function getSelectedValueIds() {
-    return Array.from(document.querySelectorAll('.variant-option.active'))
-        .map(option => Number(option.dataset.valueId))
-        .filter(Boolean);
-}
+    function switchImage(element, imgUrl) {
+        document.getElementById('mainImage').src = imgUrl;
+        document.querySelectorAll('.thumb-item').forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
+    }
 
-function findSelectedVariant() {
-    const selectedIds = getSelectedValueIds();
+    function selectColor(element) {
+        const card = element.closest('.info-card');
+        card.querySelectorAll('.color-dot').forEach(dot => dot.classList.remove('active'));
+        element.classList.add('active');
 
-    return productVariants.find(variant => {
-        const variantValueIds = variant.attribute_value_ids.map(Number);
-        return selectedIds.every(id => variantValueIds.includes(id));
+        const label = card.querySelector('.color-label');
+        if (label) label.textContent = element.getAttribute('data-name');
+
+        syncVariantDetails();
+    }
+
+    function selectVariant(element) {
+        const card = element.closest('.info-card');
+        card.querySelectorAll('.variant-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+
+        syncVariantDetails();
+    }
+
+    function syncVariantDetails() {
+        const activeOptionIds = Array.from(document.querySelectorAll('.variant-option.active'))
+            .map(el => parseInt(el.getAttribute('data-value-id')));
+
+        const matchVariant = productVariants.find(variant =>
+            variant.attribute_value_ids.length === activeOptionIds.length &&
+            variant.attribute_value_ids.every(id => activeOptionIds.includes(id))
+        );
+
+        const currentPriceEl    = document.getElementById('variantCurrentPrice');
+        const originalPriceEl   = document.getElementById('variantOriginalPrice');
+        const savingBadgeEl     = document.getElementById('variantSavingBadge');
+        const salePercentBadgeEl = document.getElementById('salePercentBadge');
+        const skuEl             = document.getElementById('variantSku');
+        const stockDisplayEl    = document.getElementById('variantStockDisplay');
+        const btnAdd            = document.getElementById('btnAddToCart');
+        const btnBuy            = document.getElementById('btnBuyNow');
+
+        if (matchVariant) {
+            document.getElementById('selectedVariantId').value = matchVariant.id;
+            maxAvailableStock = matchVariant.stock;
+
+            currentPriceEl.textContent = formatVND(matchVariant.final_price);
+
+            if (matchVariant.sale_price && matchVariant.price > matchVariant.sale_price) {
+                originalPriceEl.textContent = formatVND(matchVariant.price);
+                originalPriceEl.classList.remove('hidden');
+
+                savingBadgeEl.textContent = 'Tiết kiệm ' + formatVND(matchVariant.price - matchVariant.sale_price);
+                savingBadgeEl.classList.remove('hidden');
+
+                const pct = Math.round((1 - matchVariant.sale_price / matchVariant.price) * 100);
+                if (salePercentBadgeEl) {
+                    salePercentBadgeEl.textContent = '-' + pct + '%';
+                    salePercentBadgeEl.classList.remove('hidden');
+                }
+            } else {
+                originalPriceEl.classList.add('hidden');
+                savingBadgeEl.classList.add('hidden');
+                if (salePercentBadgeEl) salePercentBadgeEl.classList.add('hidden');
+            }
+
+            if (skuEl) skuEl.textContent = 'SKU: ' + matchVariant.sku;
+            if (matchVariant.image_url) document.getElementById('mainImage').src = matchVariant.image_url;
+
+            if (matchVariant.stock > 0) {
+                stockDisplayEl.textContent = `Kho: Còn ${matchVariant.stock} sản phẩm`;
+                stockDisplayEl.className = 'text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg ml-2';
+
+                btnAdd.disabled = false; btnAdd.style.opacity = '1'; btnAdd.querySelector('.btn-text').textContent = 'Thêm vào giỏ';
+                btnBuy.disabled = false; btnBuy.style.opacity = '1'; btnBuy.querySelector('.btn-text').textContent = 'Mua ngay';
+            } else {
+                stockDisplayEl.textContent = 'Hết hàng';
+                stockDisplayEl.className = 'text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg ml-2';
+                disablePurchaseButtons('Hết hàng');
+            }
+
+            if (currentQuantity > maxAvailableStock) {
+                currentQuantity = maxAvailableStock > 0 ? maxAvailableStock : 1;
+                document.getElementById('qtyDisplay').textContent = currentQuantity;
+            }
+
+        } else {
+            document.getElementById('selectedVariantId').value = '';
+            maxAvailableStock = 0;
+            currentQuantity = 1;
+            document.getElementById('qtyDisplay').textContent = '1';
+
+            currentPriceEl.textContent = 'Không sẵn có';
+            originalPriceEl.classList.add('hidden');
+            savingBadgeEl.classList.add('hidden');
+            if (salePercentBadgeEl) salePercentBadgeEl.classList.add('hidden');
+            if (skuEl) skuEl.textContent = 'SKU: --';
+
+            stockDisplayEl.textContent = 'Không có sẵn combo này';
+            stockDisplayEl.className = 'text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg ml-2';
+
+            disablePurchaseButtons('Không sẵn có');
+        }
+    }
+
+    function disablePurchaseButtons(text) {
+        const btnAdd = document.getElementById('btnAddToCart');
+        const btnBuy = document.getElementById('btnBuyNow');
+        btnAdd.disabled = true; btnAdd.style.opacity = '0.5'; btnAdd.querySelector('.btn-text').textContent = text;
+        btnBuy.disabled = true; btnBuy.style.opacity = '0.5'; btnBuy.querySelector('.btn-text').textContent = text;
+    }
+
+    function handleCartAction(actionType) {
+        const variantId = document.getElementById('selectedVariantId').value;
+        if (!variantId) {
+            alert('Vui lòng chọn đầy đủ các tùy chọn phiên bản hợp lệ trước!');
+            return;
+        }
+
+        fetch("{{ route('client.cart.add') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ variant_id: variantId, quantity: currentQuantity })
+        })
+        .then(response => {
+            if (!response.ok) return response.json().then(err => { throw err; });
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (actionType === 'add') {
+                    alert(data.message || 'Đã thêm sản phẩm vào giỏ thành công!');
+                    const cartBadge = document.getElementById('cart-count-badge');
+                    if (cartBadge && data.cart_count !== undefined) cartBadge.textContent = data.cart_count;
+                } else if (actionType === 'buy') {
+                    window.location.href = '{{ route('client.orders.checkout') }}';
+                }
+            }
+        })
+        .catch(error => {
+            alert(error.message || 'Lỗi thêm sản phẩm, vui lòng tải lại trang.');
+        });
+    }
+
+    function switchTab(element, tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+        element.classList.add('active');
+        document.getElementById(tabId).classList.remove('hidden');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        syncVariantDetails();
     });
-}
-
-function updateVariantInfo() {
-    const variant = findSelectedVariant();
-    if (!variant) return;
-
-    const currentPrice = variant.final_price;
-    const originalPrice = variant.price;
-    const hasSale = variant.sale_price !== null && Number(variant.sale_price) < Number(variant.price);
-    const savingAmount = Math.max(0, originalPrice - currentPrice);
-    const discountPercent = hasSale ? Math.round((1 - currentPrice / originalPrice) * 100) : 0;
-
-    document.getElementById('variantCurrentPrice').textContent = formatCurrency(currentPrice);
-    document.getElementById('variantOriginalPrice').textContent = formatCurrency(originalPrice);
-    document.getElementById('variantSavingBadge').textContent = 'Tiết kiệm ' + formatCurrency(savingAmount);
-    setHidden(document.getElementById('variantOriginalPrice'), !hasSale);
-    setHidden(document.getElementById('variantSavingBadge'), !hasSale);
-
-    const salePercentBadge = document.getElementById('salePercentBadge');
-    if (salePercentBadge) {
-        salePercentBadge.textContent = '-' + discountPercent + '%';
-        setHidden(salePercentBadge, !hasSale);
-    }
-
-    const sku = document.getElementById('variantSku');
-    if (sku) {
-        sku.textContent = 'SKU: ' + variant.sku;
-    }
-
-    if (variant.image_url) {
-        document.getElementById('mainImage').src = variant.image_url;
-    }
-}
-
-// Switch main image
-function switchImage(thumb, src) {
-    document.getElementById('mainImage').src = src;
-    document.querySelectorAll('.thumb-item').forEach(t => t.classList.remove('active'));
-    thumb.classList.add('active');
-}
-
-// Qty
-let qty = 1;
-function changeQty(delta) {
-    qty = Math.max(1, qty + delta);
-    document.getElementById('qtyDisplay').textContent = qty;
-}
-
-// Variant select
-function selectVariant(btn) {
-    btn.closest('.info-card').querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    updateVariantInfo();
-}
-
-function selectColor(dot) {
-    const card = dot.closest('.info-card');
-    const dots = card.querySelectorAll('.color-dot');
-    dots.forEach((d, i) => {
-        d.classList.remove('active');
-    });
-    dot.classList.add('active');
-    const label = card.querySelector('.color-label');
-    if (label) {
-        label.textContent = dot.dataset.name ?? '';
-    }
-    updateVariantInfo();
-}
-
-// Tabs
-function switchTab(btn, targetId) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-    btn.classList.add('active');
-    document.getElementById(targetId).classList.remove('hidden');
-}
 </script>
 @endpush

@@ -50,8 +50,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3 class="text-white font-semibold text-sm tracking-wide">Next-Gen Protection</h3>
-                            <p class="text-cyan-200/50 text-xs">Modern authentication experience</p>
+                            <h3 class="text-white font-semibold text-sm tracking-wide">Bảo vệ thế hệ tiếp theo</h3>
+                            <p class="text-cyan-200/50 text-xs">Trải nghiệm xác thực hiện đại</p>
                         </div>
                     </div>
 
@@ -70,11 +70,11 @@
                     <div class="flex gap-5 mt-10">
                         <div class="px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-md shadow-lg">
                             <h2 class="text-2xl font-bold text-white tracking-tight">99.9%</h2>
-                            <p class="text-slate-500 text-xs mt-0.5 font-medium uppercase tracking-wider">Uptime Identity</p>
+                            <p class="text-slate-500 text-xs mt-0.5 font-medium uppercase tracking-wider">Nhận diện danh tính</p>
                         </div>
                         <div class="px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/5 backdrop-blur-md shadow-lg">
                             <h2 class="text-2xl font-bold text-white tracking-tight">24/7/365</h2>
-                            <p class="text-slate-500 text-xs mt-0.5 font-medium uppercase tracking-wider">Active Monitor</p>
+                            <p class="text-slate-500 text-xs mt-0.5 font-medium uppercase tracking-wider">Theo dõi hoạt động</p>
                         </div>
                     </div>
                 </div>
@@ -94,7 +94,7 @@
                                 </svg>
                             </div>
                             <h2 class="text-2xl font-bold text-white tracking-wide">Welcome Back</h2>
-                            <p class="text-sm text-slate-400 mt-1.5">Sign in to secure portal</p>
+                            <p class="text-sm text-slate-400 mt-1.5">Đăng nhập vào tài khoản của bạn</p>
                         </div>
 
                         <x-auth-session-status class="mb-4 text-center text-sm text-cyan-300 bg-cyan-500/10 py-2.5 px-4 rounded-xl border border-cyan-500/20" :status="session('status')" />
@@ -103,7 +103,7 @@
                             @csrf
 
                             <div class="space-y-1.5">
-                                <x-input-label for="email" :value="__('Email Address')" class="text-slate-300 font-medium text-xs uppercase tracking-wider ml-1" />
+                                <x-input-label for="email" :value="__('Địa chỉ Email')" class="text-slate-300 font-medium text-xs uppercase tracking-wider ml-1" />
                                 <div class="relative group">
                                     <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500 group-focus-within:text-cyan-400 transition-colors duration-200">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -136,12 +136,12 @@
                                 <label class="flex items-center gap-2.5 text-slate-400 cursor-pointer select-none group">
                                     <input type="checkbox" name="remember"
                                         class="rounded-md border-white/10 bg-slate-900/60 text-cyan-500 focus:ring-0 focus:ring-offset-0 w-4 h-4 transition duration-200 checked:bg-cyan-500">
-                                    <span class="group-hover:text-slate-200 transition duration-150">Remember me</span>
+                                    <span class="group-hover:text-slate-200 transition duration-150">Ghi nhớ tài khoản</span>
                                 </label>
 
                                 @if (Route::has('password.request'))
                                     <a href="{{ route('password.request') }}" class="text-cyan-400 hover:text-cyan-300 font-medium transition duration-150">
-                                        Forgot Password?
+                                        Quên mật khẩu?
                                     </a>
                                 @endif
                             </div>
@@ -153,19 +153,18 @@
                                     <div class="absolute inset-0 opacity-0 group-hover:opacity-100 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.2),transparent_60%)] transition duration-500"></div>
 
                                     <span class="relative z-10 tracking-wider flex items-center justify-center gap-2">
-                                        SIGN IN NOW
+                                        ĐĂNG NHẬP NGAY
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform group-hover:translate-x-1 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                         </svg>
                                     </span>
                                 </button>
+
+                                <a href="{{ route('register') }}" class="mt-4 block text-center text-sm text-slate-400 hover:text-slate-200 font-medium transition duration-150">
+                                    Chưa có tài khoản? Đăng ký ngay
+                                </a>
                             </div>
                         </form>
-
-                        <div class="mt-8 text-center text-xs text-slate-600 tracking-wide">
-                            Protected by Liquid Secured Protocol ✨
-                        </div>
-
                     </div>
                 </div>
             </div>

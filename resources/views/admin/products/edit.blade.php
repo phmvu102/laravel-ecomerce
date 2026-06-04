@@ -302,7 +302,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 function productEditForm() {
     return {
@@ -409,4 +409,4 @@ function cartesianProduct(arrays) {
     }, [[]]);
 }
 </script>
-@endsection
+@endpush

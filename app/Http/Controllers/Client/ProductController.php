@@ -29,7 +29,7 @@ class ProductController extends Controller
             ->take(4)
             ->get();
 
-        return view('client.home', compact('categories', 'newProducts', 'featuredProducts'));
+        return view('home', compact('categories', 'newProducts', 'featuredProducts'));
     }
 
     public function shop(Request $request, $category_slug = null)
@@ -55,7 +55,7 @@ class ProductController extends Controller
             ->get()
             ->each(function ($cat) {
                 // Tổng = sản phẩm cha + tổng sản phẩm các con
-                $cat->products_count = $cat->children->sum('products_count') 
+                $cat->products_count = $cat->children->sum('products_count')
                     + $cat->products()->count();
             });
 
