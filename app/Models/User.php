@@ -41,6 +41,12 @@ class User extends Authenticatable
         return $this->hasMany(Order::class);
     }
 
+    //Giỏ hàng
+    public function cart()
+    {
+        return $this->hasOne(Cart::class);
+    }
+
     // Một user có nhiều yêu cầu đổi trả
     public function returnRequests(): \Illuminate\Database\Eloquent\Relations\HasMany
     {

@@ -4,7 +4,6 @@
 
 @push('styles')
 <style>
-    /* Nền gradient nghệ thuật đồng bộ trang chủ */
     .shop-bg {
         background: #f8fafc;
         background-image:
@@ -12,7 +11,6 @@
             radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
     }
 
-    /* Sidebar Card cao cấp */
     .sidebar-card {
         background: #ffffff;
         border: 1px solid rgba(226, 232, 240, 0.7);
@@ -20,7 +18,6 @@
         border-radius: 1.5rem;
     }
 
-    /* Nút chọn giá dạng Pill mềm mại */
     .filter-btn {
         width: 100%;
         text-align: left;
@@ -46,7 +43,6 @@
         box-shadow: inset 0 1px 2px rgba(14, 165, 233, 0.05);
     }
 
-    /* Card sản phẩm đổ bóng chiều sâu */
     .product-card {
         background: #ffffff;
         border: 1px solid rgba(226, 232, 240, 0.8);
@@ -56,14 +52,13 @@
     }
     .product-card:hover {
         border-color: rgba(14, 165, 233, 0.25);
-        box-shadow: 
-            0 20px 25px -5px rgba(14, 165, 233, 0.05), 
+        box-shadow:
+            0 20px 25px -5px rgba(14, 165, 233, 0.05),
             0 10px 10px -5px rgba(14, 165, 233, 0.02),
             0 0 0 1px rgba(14, 165, 233, 0.05);
         transform: translateY(-5px);
     }
 
-    /* Khung chứa ảnh mượt mà */
     .product-img-wrap {
         aspect-ratio: 1;
         display: flex;
@@ -84,7 +79,6 @@
         transform: scale(1.06) translateY(-2px);
     }
 
-    /* Lớp phủ Quick View mịn màng */
     .quick-view-overlay {
         position: absolute;
         inset: 0;
@@ -101,7 +95,6 @@
         opacity: 1;
     }
 
-    /* Badge phong cách bo tròn hiện đại */
     .badge-premium {
         font-size: 0.65rem;
         font-weight: 700;
@@ -122,7 +115,6 @@
         border: 1px solid #ffe4e6;
     }
 
-    /* Nút thêm vào giỏ hàng tinh xảo */
     .add-cart-btn {
         width: 2.5rem;
         height: 2.5rem;
@@ -144,7 +136,6 @@
         box-shadow: 0 8px 20px -4px rgba(14, 165, 233, 0.45);
     }
 
-    /* Thanh phân trang bo góc đồng bộ */
     .page-btn {
         width: 2.5rem;
         height: 2.5rem;
@@ -160,7 +151,6 @@
     .page-btn:hover:not(.active) { background: #f1f5f9; color: #0f172a; }
     .page-btn.active { background: #0ea5e9; color: #fff; box-shadow: 0 6px 20px -4px rgba(14, 165, 233, 0.4); }
 
-    /* Tinh chỉnh thẻ Select mượt mà */
     .sort-select {
         font-size: 0.85rem;
         font-weight: 500;
@@ -206,23 +196,20 @@
             </div>
         </div>
 
-        {{-- Main Filter Form --}}
         <form action="{{ URL::current() }}" method="GET" id="filter-form">
-            
             @if(request('search'))
                 <input type="hidden" name="search" value="{{ request('search') }}">
             @endif
-
             <input type="hidden" name="min_price" id="min_price_input" value="{{ request('min_price') }}">
             <input type="hidden" name="max_price" id="max_price_input" value="{{ request('max_price') }}">
 
             <div class="lg:flex lg:gap-8">
 
-                {{-- ===== SIDEBAR ===== --}}
+                {{-- Sidebar --}}
                 <aside class="w-full lg:w-64 flex-shrink-0 mb-8 lg:mb-0">
                     <div class="sidebar-card p-6 sticky top-24 space-y-7">
 
-                        {{-- Danh mục phân cấp --}}
+                        {{-- Danh mục --}}
                         <div>
                             <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2.5">
                                 <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7"/></svg>
@@ -231,72 +218,70 @@
                             <ul class="space-y-0.5">
                                 <li>
                                     <a href="{{ route('client.shop') }}"
-                                    class="cat-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold
-                                            {{ !request()->route('category_slug') ? 'bg-sky-50/70 text-sky-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' }}">
+                                       class="cat-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold
+                                              {{ !request()->route('category_slug') ? 'bg-sky-50/70 text-sky-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800' }}">
                                         <span>Tất cả sản phẩm</span>
                                         <span class="text-xs px-2.5 py-0.5 rounded-full font-bold
-                                                    {{ !request()->route('category_slug') ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-400' }}">
+                                                     {{ !request()->route('category_slug') ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-400' }}">
                                             {{ $products->total() }}
                                         </span>
                                     </a>
                                 </li>
 
                                 @foreach($categories as $cat)
-                                @php
-                                    $isParentActive = request()->route('category_slug') == $cat->slug;
-                                    $isChildActive  = $cat->children->contains('slug', request()->route('category_slug'));
-                                    $isOpen         = $isParentActive || $isChildActive;
-                                @endphp
-                                <li x-data="{ open: {{ $isOpen ? 'true' : 'false' }} }">
+                                    @php
+                                        $isParentActive = request()->route('category_slug') == $cat->slug;
+                                        $isChildActive  = $cat->children->contains('slug', request()->route('category_slug'));
+                                        $isOpen         = $isParentActive || $isChildActive;
+                                    @endphp
+                                    <li x-data="{ open: {{ $isOpen ? 'true' : 'false' }} }">
 
-                                    {{-- Danh mục cha --}}
-                                    <div class="flex items-center gap-1">
-                                        <a href="{{ route('client.shop', $cat->slug) }}"
-                                        class="cat-link flex-1 flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm
-                                                {{ $isParentActive ? 'font-bold bg-sky-50/70 text-sky-600' : 'font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800' }}">
-                                            <span>{{ $cat->name }}</span>
-                                            <span class="text-xs px-2 py-0.5 rounded-full font-bold
-                                                        {{ $isParentActive ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-400' }}">
-                                                {{ $cat->products_count }}
-                                            </span>
-                                        </a>
-
-                                        @if($cat->children->isNotEmpty())
-                                        <button @click="open = !open"
-                                                class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all flex-shrink-0">
-                                            <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="open ? 'rotate-90' : ''"
-                                                fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                                            </svg>
-                                        </button>
-                                        @endif
-                                    </div>
-
-                                    {{-- Danh mục con --}}
-                                    @if($cat->children->isNotEmpty())
-                                    <ul x-show="open" x-cloak
-                                        x-transition:enter="transition ease-out duration-200"
-                                        x-transition:enter-start="opacity-0 -translate-y-1"
-                                        x-transition:enter-end="opacity-100 translate-y-0"
-                                        class="ml-4 mt-0.5 space-y-0.5 border-l-2 border-slate-100 pl-3">
-                                        @foreach($cat->children as $child)
-                                        @php $isChildItemActive = request()->route('category_slug') == $child->slug; @endphp
-                                        <li>
-                                            <a href="{{ route('client.shop', $child->slug) }}"
-                                            class="cat-link flex items-center justify-between px-3 py-2 rounded-xl text-sm
-                                                    {{ $isChildItemActive ? 'font-bold text-sky-600 bg-sky-50/60' : 'font-medium text-slate-400 hover:bg-slate-50 hover:text-slate-700' }}">
-                                                <span>{{ $child->name }}</span>
+                                        <div class="flex items-center gap-1">
+                                            <a href="{{ route('client.shop', $cat->slug) }}"
+                                               class="cat-link flex-1 flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm
+                                                      {{ $isParentActive ? 'font-bold bg-sky-50/70 text-sky-600' : 'font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800' }}">
+                                                <span>{{ $cat->name }}</span>
                                                 <span class="text-xs px-2 py-0.5 rounded-full font-bold
-                                                            {{ $isChildItemActive ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-400' }}">
-                                                    {{ $child->products_count }}
+                                                             {{ $isParentActive ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-400' }}">
+                                                    {{ $cat->products_count }}
                                                 </span>
                                             </a>
-                                        </li>
-                                        @endforeach
-                                    </ul>
-                                    @endif
 
-                                </li>
+                                            @if($cat->children->isNotEmpty())
+                                            <button @click="open = !open"
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all flex-shrink-0">
+                                                <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="open ? 'rotate-90' : ''"
+                                                     fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                                </svg>
+                                            </button>
+                                            @endif
+                                        </div>
+
+                                        @if($cat->children->isNotEmpty())
+                                        <ul x-show="open" x-cloak
+                                            x-transition:enter="transition ease-out duration-200"
+                                            x-transition:enter-start="opacity-0 -translate-y-1"
+                                            x-transition:enter-end="opacity-100 translate-y-0"
+                                            class="ml-4 mt-0.5 space-y-0.5 border-l-2 border-slate-100 pl-3">
+                                            @foreach($cat->children as $child)
+                                                @php $isChildItemActive = request()->route('category_slug') == $child->slug; @endphp
+                                                <li>
+                                                    <a href="{{ route('client.shop', $child->slug) }}"
+                                                       class="cat-link flex items-center justify-between px-3 py-2 rounded-xl text-sm
+                                                              {{ $isChildItemActive ? 'font-bold text-sky-600 bg-sky-50/60' : 'font-medium text-slate-400 hover:bg-slate-50 hover:text-slate-700' }}">
+                                                        <span>{{ $child->name }}</span>
+                                                        <span class="text-xs px-2 py-0.5 rounded-full font-bold
+                                                                     {{ $isChildItemActive ? 'bg-sky-100 text-sky-600' : 'bg-slate-100 text-slate-400' }}">
+                                                            {{ $child->products_count }}
+                                                        </span>
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                        @endif
+
+                                    </li>
                                 @endforeach
                             </ul>
                         </div>
@@ -311,13 +296,13 @@
                             </h3>
                             <div class="space-y-1.5">
                                 @forelse($brands ?? [] as $brand)
-                                <label class="flex items-center gap-3 px-2 py-1.5 rounded-xl cursor-pointer group hover:bg-slate-50 transition-colors">
-                                    <input type="checkbox" name="brands[]" value="{{ $brand->slug }}"
-                                        {{ in_array($brand->slug, (array)request('brands')) ? 'checked' : '' }}
-                                        onchange="this.form.submit()"
-                                        class="w-4.5 h-4.5 rounded-md border-slate-300 text-sky-500 focus:ring-sky-400/30 focus:ring-offset-0">
-                                    <span class="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">{{ $brand->name }}</span>
-                                </label>
+                                    <label class="flex items-center gap-3 px-2 py-1.5 rounded-xl cursor-pointer group hover:bg-slate-50 transition-colors">
+                                        <input type="checkbox" name="brands[]" value="{{ $brand->slug }}"
+                                               {{ in_array($brand->slug, (array)request('brands')) ? 'checked' : '' }}
+                                               onchange="this.form.submit()"
+                                               class="w-4.5 h-4.5 rounded-md border-slate-300 text-sky-500 focus:ring-sky-400/30 focus:ring-offset-0">
+                                        <span class="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">{{ $brand->name }}</span>
+                                    </label>
                                 @empty
                                     <p class="text-xs text-slate-400 italic px-1">Không có thương hiệu</p>
                                 @endforelse
@@ -334,16 +319,16 @@
                             </h3>
                             <div class="space-y-2">
                                 @foreach([
-                                    ['label' => 'Tất cả giá', 'min' => '', 'max' => ''],
-                                    ['label' => 'Dưới 5 triệu', 'min' => '', 'max' => '5000000'],
-                                    ['label' => '5 triệu – 15 triệu', 'min' => '5000000', 'max' => '15000000'],
-                                    ['label' => 'Trên 15 triệu', 'min' => '15000000', 'max' => ''],
+                                    ['label' => 'Tất cả giá',       'min' => '',         'max' => ''],
+                                    ['label' => 'Dưới 5 triệu',     'min' => '',         'max' => '5000000'],
+                                    ['label' => '5 triệu – 15 triệu','min' => '5000000', 'max' => '15000000'],
+                                    ['label' => 'Trên 15 triệu',    'min' => '15000000', 'max' => ''],
                                 ] as $range)
-                                <button type="button" 
-                                        onclick="setPriceRange('{{ $range['min'] }}', '{{ $range['max'] }}')"
-                                        class="filter-btn {{ request('max_price') == $range['max'] && request('min_price') == $range['min'] ? 'active' : '' }}">
-                                    {{ $range['label'] }}
-                                </button>
+                                    <button type="button"
+                                            onclick="setPriceRange('{{ $range['min'] }}', '{{ $range['max'] }}')"
+                                            class="filter-btn {{ request('max_price') == $range['max'] && request('min_price') == $range['min'] ? 'active' : '' }}">
+                                        {{ $range['label'] }}
+                                    </button>
                                 @endforeach
                             </div>
                         </div>
@@ -351,52 +336,59 @@
                     </div>
                 </aside>
 
-                {{-- ===== PRODUCT AREA ===== --}}
+                {{-- Product Area --}}
                 <main class="flex-1 min-w-0">
 
-                    {{-- Top bar sắp xếp --}}
+                    {{-- Sort bar --}}
                     <div class="bg-white border border-slate-200/70 rounded-2xl px-6 py-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm shadow-slate-100/40">
                         <p class="text-sm text-slate-500 font-medium">
-                            Hiển thị từ <span class="font-bold text-slate-800">{{ $products->firstItem() ?? 0 }}</span> đến <span class="font-bold text-slate-800">{{ $products->lastItem() ?? 0 }}</span> sản phẩm
+                            Hiển thị từ <span class="font-bold text-slate-800">{{ $products->firstItem() ?? 0 }}</span>
+                            đến <span class="font-bold text-slate-800">{{ $products->lastItem() ?? 0 }}</span> sản phẩm
                         </p>
                         <div class="flex items-center gap-3">
                             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sắp xếp:</span>
                             <select class="sort-select" name="sort" onchange="this.form.submit()">
-                                <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Mới nhất đầu tiên</option>
-                                <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Giá: Thấp đến Cao</option>
-                                <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Giá: Cao đến Thấp</option>
-                                <option value="best_selling" {{ request('sort') == 'best_selling' ? 'selected' : '' }}>Bán chạy hàng đầu</option>
+                                <option value="newest"      {{ request('sort') == 'newest'      ? 'selected' : '' }}>Mới nhất đầu tiên</option>
+                                <option value="price_asc"   {{ request('sort') == 'price_asc'   ? 'selected' : '' }}>Giá: Thấp đến Cao</option>
+                                <option value="price_desc"  {{ request('sort') == 'price_desc'  ? 'selected' : '' }}>Giá: Cao đến Thấp</option>
+                                <option value="best_selling"{{ request('sort') == 'best_selling'? 'selected' : '' }}>Bán chạy hàng đầu</option>
                             </select>
                         </div>
                     </div>
 
+                    {{-- Product Grid --}}
                     <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         @forelse($products ?? [] as $product)
                         <div class="product-card relative">
 
-                            {{-- Badges --}}
+                            {{-- Badge --}}
                             <div class="absolute top-3 left-3 z-10 flex flex-col gap-1">
                                 @if($product->is_on_sale)
                                     <span class="badge-premium badge-sale">-{{ $product->max_discount }}%</span>
                                 @endif
                             </div>
 
-                            {{-- Image Wrapper --}}
+                            {{-- Image --}}
                             <div class="product-img-wrap bg-gradient-to-br from-slate-50 to-slate-100/40">
-                                @if($product->image)
+                                @if(!empty($product->thumbnail))
+                                    <img src="{{ asset('storage/' . $product->thumbnail) }}" alt="{{ $product->name }}">
+                                @elseif(!empty($product->image))
                                     <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
+                                @elseif($product->variants->isNotEmpty() && !empty($product->variants->first()->image))
+                                    <img src="{{ asset('storage/' . $product->variants->first()->image) }}" alt="{{ $product->name }}">
                                 @else
                                     <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60" alt="{{ $product->name }}">
                                 @endif
+
                                 <div class="quick-view-overlay">
                                     <a href="{{ route('client.product.show', $product->slug) }}"
-                                    class="w-11 h-11 bg-white/90 rounded-2xl flex items-center justify-center shadow-md text-slate-700 hover:bg-sky-500 hover:text-white hover:scale-105 transition-all duration-300 border border-slate-100">
+                                       class="w-11 h-11 bg-white/90 rounded-2xl flex items-center justify-center shadow-md text-slate-700 hover:bg-sky-500 hover:text-white hover:scale-105 transition-all duration-300 border border-slate-100">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
                                 </div>
                             </div>
 
-                            {{-- Info Content --}}
+                            {{-- Info --}}
                             <div class="p-5">
                                 <span class="text-[10px] font-black tracking-widest uppercase text-sky-500/80">
                                     {{ $product->brand->name ?? 'ShopNova' }}
@@ -423,20 +415,18 @@
 
                         </div>
                         @empty
-                            <div class="col-span-full py-20 text-center bg-white border border-dashed border-slate-200 rounded-3xl">
-                                <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.008 1.24l.885 1.77a2.25 2.25 0 002.007 1.24h1.98a2.25 2.25 0 002.007-1.24l.885-1.77a2.25 2.25 0 012.007-1.24h3.86m-18 0h18a2.25 2.25 0 012.25 2.25v4.25A2.25 2.25 0 0121.75 21H2.25A2.25 2.25 0 010 18.75v-4.25A2.25 2.25 0 012.25 13.5z"/></svg>
-                                <p class="text-slate-400 text-sm font-medium">Không tìm thấy sản phẩm nào phù hợp bộ lọc của bạn.</p>
-                            </div>
+                        <div class="col-span-full py-20 text-center bg-white border border-dashed border-slate-200 rounded-3xl">
+                            <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.008 1.24l.885 1.77a2.25 2.25 0 002.007 1.24h1.98a2.25 2.25 0 002.007-1.24l.885-1.77a2.25 2.25 0 012.007-1.24h3.86m-18 0h18a2.25 2.25 0 012.25 2.25v4.25A2.25 2.25 0 0121.75 21H2.25A2.25 2.25 0 010 18.75v-4.25A2.25 2.25 0 012.25 13.5z"/></svg>
+                            <p class="text-slate-400 text-sm font-medium">Không tìm thấy sản phẩm nào phù hợp bộ lọc của bạn.</p>
+                        </div>
                         @endforelse
                     </div>
-                    </div>
 
-                    {{-- Pagination thiết kế dạng Premium --}}
+                    {{-- Pagination --}}
                     @if(isset($products) && $products->hasPages())
                     <div class="mt-12 flex justify-center">
                         <div class="inline-flex items-center gap-1.5 p-2 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
-                            
-                            {{-- Nút quay lại (Previous) --}}
+
                             @if($products->onFirstPage())
                                 <span class="page-btn opacity-30 cursor-not-allowed">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
@@ -447,13 +437,11 @@
                                 </a>
                             @endif
 
-                            {{-- Các số trang (Page numbers) --}}
                             @if(method_exists($products, 'renderableProvider'))
                                 @foreach($products->renderableProvider()->elements() as $element)
                                     @if(is_string($element))
                                         <span class="page-btn opacity-50 cursor-not-allowed">{{ $element }}</span>
                                     @endif
-
                                     @if(is_array($element))
                                         @foreach($element as $page => $url)
                                             @if($page == $products->currentPage())
@@ -465,7 +453,6 @@
                                     @endif
                                 @endforeach
                             @else
-                                {{-- Dự phòng nếu hệ thống không dùng LengthAwarePaginator mặc định --}}
                                 @foreach($products->getUrlRange(1, $products->lastPage()) as $page => $url)
                                     @if($page == $products->currentPage())
                                         <span class="page-btn active">{{ $page }}</span>
@@ -475,7 +462,6 @@
                                 @endforeach
                             @endif
 
-                            {{-- Nút trang tiếp theo (Next) --}}
                             @if($products->hasMorePages())
                                 <a href="{{ $products->appends(request()->all())->nextPageUrl() }}" class="page-btn">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -485,6 +471,7 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                                 </span>
                             @endif
+
                         </div>
                     </div>
                     @endif
@@ -495,7 +482,6 @@
     </div>
 </div>
 
-{{-- Form phụ ẩn phục vụ tính năng AJAX/Submit Add to Cart --}}
 <form id="add-to-cart-form" action="{{ route('client.cart.add') }}" method="POST" style="display: none;">
     @csrf
     <input type="hidden" name="product_id" id="cart_product_id">
@@ -503,14 +489,12 @@
 </form>
 
 <script>
-    // Hàm đẩy dữ liệu khoảng giá vào input ẩn và submit form
     function setPriceRange(min, max) {
         document.getElementById('min_price_input').value = min;
         document.getElementById('max_price_input').value = max;
         document.getElementById('filter-form').submit();
     }
 
-    // Hàm trigger submit form thêm vào giỏ hàng
     function addToCart(productId) {
         document.getElementById('cart_product_id').value = productId;
         document.getElementById('add-to-cart-form').submit();
