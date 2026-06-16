@@ -426,7 +426,7 @@
                             <span class="btn-text">Mua ngay</span>
                         </button>
                     </div>
-                </div>
+                </form>
 
                 {{-- Trust Badges --}}
                 <div class="grid grid-cols-2 gap-2.5">
